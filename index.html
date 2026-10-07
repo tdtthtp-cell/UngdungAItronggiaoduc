@@ -1,502 +1,1735 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Trợ Lý AI Giáo Dục - Chuẩn Công Văn 7991</title>
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Font Awesome Icons -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <!-- Marked.js để render Markdown sang HTML -->
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-    body { font-family: 'Inter', sans-serif; }
-    
-    /* Định dạng in ấn A4 chuẩn cho đề kiểm tra và giáo án */
-    @media print {
-      body * { visibility: hidden; }
-      #printable-area, #printable-area * { visibility: visible; }
-      #printable-area {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
-        margin: 0;
-        padding: 20mm;
-      }
-      .no-print { display: none !important; }
-    }
-    
-    /* Định dạng bảng biểu Ma trận chuẩn */
-    .prose table {
-      width: 100%;
-      border-collapse: collapse;
-      margin: 1rem 0;
-    }
-    .prose th, .prose td {
-      border: 1px solid #d1d5db;
-      padding: 8px 12px;
-      font-size: 0.9rem;
-    }
-    .prose th {
-      background-color: #f3f4f6;
-      font-weight: 600;
-      text-align: center;
-    }
-  </style>
-</head>
-<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
-
-  <!-- Header thanh công cụ -->
-  <header class="bg-indigo-700 text-white shadow-md sticky top-0 z-50 no-print">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-      <div class="flex items-center space-x-3">
-        <span class="bg-white/10 p-2.5 rounded-xl border border-white/20">
-          <i class="fa-solid fa-graduation-cap text-2xl text-amber-300"></i>
-        </span>
-        <div>
-          <h1 class="font-bold text-lg leading-tight tracking-wide">EDU-AI STUDIO</h1>
-          <p class="text-xs text-indigo-200">Biên soạn Kế hoạch bài dạy & Đề kiểm tra chuẩn CV 7991</p>
-        </div>
-      </div>
-      
-      <div class="flex items-center space-x-3">
-        <button onclick="openApiModal()" id="apiKeyBadge" class="flex items-center space-x-2 text-xs font-medium bg-indigo-800 hover:bg-indigo-900 border border-indigo-500/50 px-3.5 py-1.5 rounded-full transition">
-          <i class="fa-solid fa-key text-amber-400"></i>
-          <span id="apiKeyStatusText">Cài đặt API Key</span>
-        </button>
-        <a href="https://aistudio.google.com/app/apikey" target="_blank" title="Lấy API Key miễn phí" class="text-xs text-indigo-200 hover:text-white underline">
-          Lấy Key ở đâu?
-        </a>
-      </div>
-    </div>
-  </header>
-
-  <!-- Khung cấu hình Modal API Key -->
-  <div id="apiKeyModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-50 p-4">
-    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
-      <div class="flex justify-between items-center border-b pb-3">
-        <h3 class="font-bold text-slate-800 text-lg flex items-center gap-2">
-          <i class="fa-solid fa-shield-halved text-indigo-600"></i> Google AI Studio API Key
-        </h3>
-        <button onclick="closeApiModal()" class="text-slate-400 hover:text-slate-600">
-          <i class="fa-solid fa-xmark text-lg"></i>
-        </button>
-      </div>
-      <p class="text-xs text-slate-600 leading-relaxed">
-        API Key được lưu cục bộ trên trình duyệt (LocalStorage) của bạn và gửi trực tiếp tới máy chủ Google, không thông qua bất kỳ server trung gian nào.
-      </p>
-      <div>
-        <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Gemini API Key</label>
-        <input type="password" id="apiKeyInput" placeholder="Dán mã API Key bắt đầu bằng AIzaSy..." 
-          class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-      </div>
-      <div>
-        <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Mô hình AI</label>
-        <select id="modelSelect" class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white">
-          <option value="gemini-3.8-flash">gemini-3.8-flash (Phản hồi nhanh, tối ưu nhất)</option>
-          <option value="gemini-3.8-pro">Gemini 3.8 Pro (Suy luận sâu, bài bản nhất)</option>
-        </select>
-      </div>
-      <div class="flex justify-end gap-2 pt-2">
-        <button onclick="closeApiModal()" class="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg">Đóng</button>
-        <button onclick="saveApiKey()" class="px-5 py-2 text-sm bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg shadow-sm">Lưu cấu hình</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Nội dung giao diện chính -->
-  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-8">
-    
-    <!-- CỘT BÊN TRÁI: BẢNG ĐIỀU KHIỂN & NHẬP THÔNG SỐ (5 CỘT) -->
-    <div class="lg:col-span-5 space-y-6 no-print">
-      
-      <!-- Chọn loại sản phẩm đầu ra -->
-      <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
-        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">
-          1. Chọn định dạng sản phẩm cần xuất
-        </label>
-        <div class="grid grid-cols-3 gap-2">
-          <button type="button" onclick="selectOutputMode('exam')" id="btnModeExam"
-            class="mode-btn active p-3 rounded-xl border text-center transition flex flex-col items-center gap-1.5 bg-indigo-50 border-indigo-600 text-indigo-700 font-semibold shadow-xs">
-            <i class="fa-solid fa-file-signature text-lg"></i>
-            <span class="text-xs">Đề KT 7991</span>
-          </button>
-          <button type="button" onclick="selectOutputMode('lesson')" id="btnModeLesson"
-            class="mode-btn p-3 rounded-xl border text-center transition flex flex-col items-center gap-1.5 border-slate-200 text-slate-600 hover:bg-slate-50">
-            <i class="fa-solid fa-book-open text-lg"></i>
-            <span class="text-xs">Giáo án (KHBD)</span>
-          </button>
-          <button type="button" onclick="selectOutputMode('slide')" id="btnModeSlide"
-            class="mode-btn p-3 rounded-xl border text-center transition flex flex-col items-center gap-1.5 border-slate-200 text-slate-600 hover:bg-slate-50">
-            <i class="fa-solid fa-file-powerpoint text-lg"></i>
-            <span class="text-xs">Đề cương Slide</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- Biểu mẫu nhập thông tin sư phạm -->
-      <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-4">
-        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">
-          2. Thông tin chuyên môn
-        </label>
-
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="text-xs font-medium text-slate-700 block mb-1">Môn học</label>
-            <input type="text" id="subjectInput" value="Toán học" placeholder="VD: Vật lý, Ngữ văn, Lịch sử..."
-              class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-          </div>
-          <div>
-            <label class="text-xs font-medium text-slate-700 block mb-1">Khối lớp / Cấp học</label>
-            <select id="gradeSelect" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white">
-              <option value="Lớp 6 (THCS)">Lớp 6 (THCS)</option>
-              <option value="Lớp 7 (THCS)">Lớp 7 (THCS)</option>
-              <option value="Lớp 8 (THCS)">Lớp 8 (THCS)</option>
-              <option value="Lớp 9 (THCS)">Lớp 9 (THCS)</option>
-              <option value="Lớp 10 (THPT)" selected>Lớp 10 (THPT)</option>
-              <option value="Lớp 11 (THPT)">Lớp 11 (THPT)</option>
-              <option value="Lớp 12 (THPT)">Lớp 12 (THPT)</option>
-            </select>
-          </div>
-        </div>
-
-        <div>
-          <label class="text-xs font-medium text-slate-700 block mb-1">Tên bài học / Chủ đề kiểm tra</label>
-          <input type="text" id="topicInput" value="Hàm số bậc hai và đồ thị" placeholder="VD: Khúc xạ ánh sáng; Bài toán thực tế Oxy..."
-            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none font-medium">
-        </div>
-
-        <div id="examSpecificFields">
-          <label class="text-xs font-medium text-slate-700 block mb-1">Hình thức / Thời gian kiểm tra</label>
-          <div class="grid grid-cols-2 gap-3">
-            <select id="examTypeSelect" class="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white">
-              <option value="Kiểm tra Giữa kỳ">Kiểm tra Giữa kỳ</option>
-              <option value="Kiểm tra Cuối kỳ">Kiểm tra Cuối kỳ</option>
-              <option value="Kiểm tra Thường xuyên / 15 phút">Kiểm tra Thường xuyên</option>
-            </select>
-            <select id="examDurationSelect" class="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white">
-              <option value="45 phút">Thời lượng 45 phút</option>
-              <option value="60 phút">Thời lượng 60 phút</option>
-              <option value="90 phút">Thời lượng 90 phút</option>
-            </select>
-          </div>
-        </div>
-
-        <div>
-          <div class="flex justify-between items-center mb-1">
-            <label class="text-xs font-medium text-slate-700">Yêu cầu cần đạt / Nội dung trọng tâm bổ sung</label>
-            <button onclick="fillSamplePrompt()" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium">
-              <i class="fa-solid fa-wand-magic-sparkles mr-1"></i> Điền ví dụ
-            </button>
-          </div>
-          <textarea id="promptNotes" rows="3" placeholder="Nhập thêm các lưu ý (ví dụ: bám sát thực tiễn đời sống, kết hợp phân hóa học sinh giỏi...)"
-            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"></textarea>
-        </div>
-
-        <button onclick="generateContent()" id="generateBtn"
-          class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-xl shadow-md transition flex items-center justify-center space-x-2">
-          <i class="fa-solid fa-bolt"></i>
-          <span>Bắt đầu Khởi tạo với AI</span>
-        </button>
-      </div>
-
-      <!-- Khung ghi chú tuân thủ quy chế -->
-      <div class="p-4 bg-emerald-50 rounded-xl border border-emerald-200 text-xs text-emerald-800 flex items-start gap-3">
-        <i class="fa-solid fa-circle-check text-emerald-600 text-base mt-0.5"></i>
-        <div>
-          <p class="font-bold">Đảm bảo cấu trúc Công văn 7991/BGDĐT-GDTrH:</p>
-          <p class="mt-1 text-emerald-700">Tự động cấu trúc Đề thi theo 3 dạng thức mới: TN Nhiều lựa chọn, TN Đúng/Sai (4 ý a,b,c,d), TN Trả lời ngắn & Tự luận kèm Bảng đặc tả năng lực.</p>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- CỘT BÊN PHẢI: KẾT QUẢ VĂN BẢN VÀ XUẤT FILE (7 CỘT) -->
-    <div class="lg:col-span-7 flex flex-col space-y-4">
-      
-      <!-- Thanh công cụ tương tác kết quả -->
-      <div class="bg-white p-3.5 rounded-2xl shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-3 no-print">
-        <div class="flex items-center space-x-2">
-          <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-          <span class="text-xs font-semibold text-slate-700 uppercase tracking-wide" id="resultLabel">Sản phẩm xuất bản</span>
-        </div>
-        <div class="flex items-center space-x-2">
-          <button onclick="copyResult()" title="Sao chép văn bản" class="px-3 py-1.5 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition flex items-center gap-1.5">
-            <i class="fa-regular fa-copy"></i> Sao chép
-          </button>
-          <button onclick="window.print()" title="In ra giấy hoặc lưu PDF" class="px-3 py-1.5 text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition flex items-center gap-1.5 shadow-xs">
-            <i class="fa-solid fa-print"></i> In / Xuất PDF
-          </button>
-        </div>
-      </div>
-
-      <!-- Vùng hiển thị kết quả chính -->
-      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 md:p-8 flex-1 min-h-[550px] relative overflow-y-auto" id="printable-area">
-        
-        <!-- Trạng thái chờ -->
-        <div id="idleState" class="absolute inset-0 flex flex-col items-center justify-center text-slate-400 p-6 text-center">
-          <div class="w-16 h-16 rounded-2xl bg-indigo-50 text-indigo-500 flex items-center justify-center text-2xl mb-4">
-            <i class="fa-solid fa-newspaper"></i>
-          </div>
-          <p class="font-semibold text-slate-700 text-base">Chưa có dữ liệu được tạo</p>
-          <p class="text-xs text-slate-500 max-w-sm mt-1">
-            Vui lòng nhập chủ đề, chọn định dạng và nhấn "Bắt đầu Khởi tạo với AI" để xuất bản tài liệu giảng dạy.
-          </p>
-        </div>
-
-        <!-- Trạng thái Loading -->
-        <div id="loadingState" class="absolute inset-0 bg-white/90 hidden flex-col items-center justify-center p-6 text-center z-10">
-          <div class="inline-block animate-spin text-indigo-600 text-3xl mb-4">
-            <i class="fa-solid fa-circle-notch"></i>
-          </div>
-          <p class="font-semibold text-slate-800 text-sm">Trí tuệ nhân tạo Gemini đang biên soạn tài liệu...</p>
-          <p class="text-xs text-slate-500 max-w-xs mt-1">Quá trình này mất khoảng 5 - 15 giây để cấu trúc bảng ma trận và đặc tả câu hỏi.</p>
-        </div>
-
-        <!-- Render văn bản Markdown -->
-        <div id="outputContent" class="prose prose-slate max-w-none hidden"></div>
-      </div>
-
-    </div>
-
-  </main>
-
-  <!-- Footer -->
-  <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500 no-print">
-    Ứng dụng AI Hỗ trợ Giáo viên thực hiện Công văn 7991/BGDĐT-GDTrH & CT GDPT 2018 | Mã nguồn mở sẵn sàng triển khai trên GitHub Pages.
-  </footer>
-
-  <!-- Logic JavaScript điều khiển ứng dụng -->
-  <script>
-    let currentMode = 'exam';
-    let apiKey = localStorage.getItem('GEMINI_API_KEY') || '';
-    let selectedModel = localStorage.getItem('GEMINI_MODEL') || 'gemini-2.5-flash';
-
-    // Khởi tạo giao diện
-    window.addEventListener('DOMContentLoaded', () => {
-      updateApiKeyUI();
-      document.getElementById('modelSelect').value = selectedModel;
-      if (apiKey) {
-        document.getElementById('apiKeyInput').value = apiKey;
-      }
-    });
-
-    function selectOutputMode(mode) {
-      currentMode = mode;
-      document.querySelectorAll('.mode-btn').forEach(btn => {
-        btn.classList.remove('active', 'bg-indigo-50', 'border-indigo-600', 'text-indigo-700', 'font-semibold');
-        btn.classList.add('border-slate-200', 'text-slate-600');
-      });
-
-      const examFields = document.getElementById('examSpecificFields');
-
-      if (mode === 'exam') {
-        document.getElementById('btnModeExam').classList.add('active', 'bg-indigo-50', 'border-indigo-600', 'text-indigo-700', 'font-semibold');
-        document.getElementById('resultLabel').innerText = 'Đề kiểm tra & Ma trận (CV 7991)';
-        examFields.style.display = 'block';
-      } else if (mode === 'lesson') {
-        document.getElementById('btnModeLesson').classList.add('active', 'bg-indigo-50', 'border-indigo-600', 'text-indigo-700', 'font-semibold');
-        document.getElementById('resultLabel').innerText = 'Kế hoạch bài dạy (Giáo án)';
-        examFields.style.display = 'none';
-      } else if (mode === 'slide') {
-        document.getElementById('btnModeSlide').classList.add('active', 'bg-indigo-50', 'border-indigo-600', 'text-indigo-700', 'font-semibold');
-        document.getElementById('resultLabel').innerText = 'Kịch bản Slide bài giảng';
-        examFields.style.display = 'none';
-      }
-    }
-
-    function fillSamplePrompt() {
-      if (currentMode === 'exam') {
-        document.getElementById('subjectInput').value = 'Toán học';
-        document.getElementById('topicInput').value = 'Dấu của tam thức bậc hai và Bất phương trình bậc hai';
-        document.getElementById('promptNotes').value = 'Đề thi gồm 70% Trắc nghiệm và 30% Tự luận. Chú trọng ứng dụng giải quyết bài toán quỹ đạo bay trong thực tế.';
-      } else if (currentMode === 'lesson') {
-        document.getElementById('subjectInput').value = 'Khoa học tự nhiên';
-        document.getElementById('topicInput').value = 'Sự truyền ánh sáng và Hiện tượng khúc xạ';
-        document.getElementById('promptNotes').value = 'Tổ chức cho học sinh làm thí nghiệm với cốc nước và bút chì ở phần Khởi động.';
-      } else {
-        document.getElementById('subjectInput').value = 'Lịch sử & Địa lý';
-        document.getElementById('topicInput').value = 'Các cuộc phát kiến địa lý lớn';
-        document.getElementById('promptNotes').value = 'Thiết kế 6 slide trực quan, có câu hỏi tương tác mở đầu kích thích tư duy.';
-      }
-    }
-
-    function openApiModal() {
-      document.getElementById('apiKeyModal').classList.remove('hidden');
-      document.getElementById('apiKeyModal').classList.add('flex');
-    }
-
-    function closeApiModal() {
-      document.getElementById('apiKeyModal').classList.add('hidden');
-      document.getElementById('apiKeyModal').classList.remove('flex');
-    }
-
-    function saveApiKey() {
-      const inputVal = document.getElementById('apiKeyInput').value.trim();
-      selectedModel = document.getElementById('modelSelect').value;
-      if (!inputVal) {
-        alert('Vui lòng nhập API Key từ Google AI Studio!');
-        return;
-      }
-      apiKey = inputVal;
-      localStorage.setItem('GEMINI_API_KEY', apiKey);
-      localStorage.setItem('GEMINI_MODEL', selectedModel);
-      updateApiKeyUI();
-      closeApiModal();
-    }
-
-    function updateApiKeyUI() {
-      const badge = document.getElementById('apiKeyBadge');
-      const text = document.getElementById('apiKeyStatusText');
-      if (apiKey) {
-        text.innerText = 'Key: Đã cấu hình (' + selectedModel.replace('gemini-', '') + ')';
-        badge.classList.remove('bg-indigo-800');
-        badge.classList.add('bg-emerald-700', 'border-emerald-500');
-      } else {
-        text.innerText = 'Chưa có API Key';
-        badge.classList.remove('bg-emerald-700', 'border-emerald-500');
-        badge.classList.add('bg-indigo-800');
-      }
-    }
-
-    // Xây dựng System Prompt sư phạm chính xác
-    function buildPrompt() {
-      const subject = document.getElementById('subjectInput').value.trim();
-      const grade = document.getElementById('gradeSelect').value;
-      const topic = document.getElementById('topicInput').value.trim();
-      const notes = document.getElementById('promptNotes').value.trim();
-
-      if (currentMode === 'exam') {
-        const examType = document.getElementById('examTypeSelect').value;
-        const duration = document.getElementById('examDurationSelect').value;
-        return `Bạn là Chuyên gia Khảo thí và Kiểm định Giáo dục trung học của Bộ Giáo dục và Đào tạo Việt Nam.
-Nhiệm vụ: Hãy biên soạn một ĐỀ KIỂM TRA ĐỊNH KỲ VÀ BẢN ĐẶC TẢ MA TRẬN theo chuẩn CÔNG VĂN 7991/BGDĐT-GDTrH mới nhất cho:
-- Môn học: ${subject}
-- Lớp: ${grade}
-- Chủ đề/Nội dung: ${topic}
-- Loại bài kiểm tra: ${examType} (Thời lượng: ${duration})
-- Yêu cầu bổ sung của giáo viên: ${notes || "Tuân thủ chặt chẽ tỉ lệ nhận biết, thông hiểu, vận dụng theo chuẩn 7991"}.
-
-BẮT BUỘC TRÌNH BÀY ĐẦY ĐỦ CÁC MỤC SAU BẰNG BẢNG BIỂU MARKDOWN:
-1. KHUNG MA TRẬN ĐỀ KIỂM TRA (Gồm các cột: Mạch nội dung, Đơn vị kiến thức, Mức độ đánh giá Biết - Hiểu - Vận dụng qua các phần I, II, III, IV, Tổng % điểm).
-2. BẢNG ĐẶC TẢ KỸ THUẬT ĐỀ KIỂM TRA (Nêu rõ câu hỏi số mấy, Yêu cầu cần đạt tương ứng của CT GDPT 2018).
-3. ĐỀ KIỂM TRA CHÍNH THỨC CẤU TRÚC 7991 GỒM 3 ĐẾN 4 PHẦN:
-   - PHẦN I: Câu hỏi trắc nghiệm nhiều lựa chọn (Chọn 1 trong 4 phương án A, B, C, D).
-   - PHẦN II: Câu hỏi trắc nghiệm Đúng/Sai (Mỗi câu gồm 4 lệnh hỏi a, b, c, d; học sinh chọn Đúng hoặc Sai).
-   - PHẦN III: Câu hỏi trắc nghiệm trả lời ngắn (Điền đáp số/từ khóa súc tích).
-   - PHẦN IV: Tự luận (Giải quyết vấn đề thực tiễn, phân hóa học sinh).
-4. HƯỚNG DẪN CHẤM, ĐÁP ÁN VÀ THANG ĐIỂM CHI TIẾT (Có thang điểm quy định rõ cho Phần II dạng Đúng/Sai: đúng 1 ý 0.1đ, đúng 2 ý 0.25đ, đúng 3 ý 0.5đ, đúng 4 ý 1.0đ theo chuẩn mới).`;
-      } 
-      
-      else if (currentMode === 'lesson') {
-        return `Bạn là Giáo viên cốt cán của Bộ Giáo dục và Đào tạo Việt Nam.
-Nhiệm vụ: Hãy soạn một KẾ HOẠCH BÀI DẠY (Giáo án) chi tiết theo đúng quy định Công văn chỉ đạo về đổi mới phương pháp dạy học cho:
-- Môn học: ${subject}
-- Lớp: ${grade}
-- Tên bài dạy: ${topic}
-- Yêu cầu đặc thù: ${notes || "Phát huy tính chủ động, giải quyết vấn đề thực tế"}.
-
-CẤU TRÚC BẮT BUỘC:
-I. MỤC TIÊU BÀI HỌC (Về Năng lực đặc thù, Năng lực chung, Phẩm chất).
-II. THIẾT BỊ DẠY HỌC VÀ HỌC LIỆU (Của giáo viên và học sinh).
-III. TIẾN TRÌNH DẠY HỌC (Thể hiện rõ 4 hoạt động:
-  1. Hoạt động 1: Mở đầu / Khởi động (Mục tiêu, Nội dung, Sản phẩm, Tổ chức thực hiện: 4 bước Chuyển giao - Thực hiện - Báo cáo - Kết luận).
-  2. Hoạt động 2: Hình thành kiến thức mới (Chi tiết các tiểu hoạt động tương ứng 4 bước).
-  3. Hoạt động 3: Luyện tập (Hệ thống bài tập củng cố, thực hành).
-  4. Hoạt động 4: Vận dụng (Nhiệm vụ mở rộng, liên hệ đời sống)).
-Trình bày mạch lạc, chỉ rõ sản phẩm cụ thể của học sinh.`;
-      } 
-      
-      else {
-        return `Bạn là Chuyên gia thiết kế bài giảng số và công nghệ giáo dục.
-Nhiệm vụ: Hãy biên soạn KỊCH BẢN ĐỀ CƯƠNG SLIDE TRÌNH CHIẾU (PowerPoint Outline) cho bài học:
-- Môn học: ${subject} (${grade})
-- Tên bài giảng: ${topic}
-- Định hướng: ${notes || "Thiết kế hiện đại, tinh gọn, giàu tính tương tác"}.
-
-Yêu cầu chi tiết cho từng Slide (tối thiểu 8 - 10 slide):
-- Slide số: Tiêu đề slide.
-- Bố cục & Hình ảnh trực quan đề xuất (Mô tả đồ họa, sơ đồ tư duy hoặc video minh họa).
-- Nội dung văn bản hiển thị trên màn hình (Ngắn gọn, súc tích, dạng bullet point).
-- Lời thoại sư phạm của giáo viên (Script giáo viên nói khi trình chiếu slide đó).
-- Câu hỏi tương tác / Hoạt động nhanh của học sinh.`;
-      }
-    }
-
-    // Gọi API tới Google AI Studio
-    async function generateContent() {
-      if (!apiKey) {
-        openApiModal();
-        return;
-      }
-
-      const prompt = buildPrompt();
-      const idleState = document.getElementById('idleState');
-      const loadingState = document.getElementById('loadingState');
-      const outputContent = document.getElementById('outputContent');
-      const generateBtn = document.getElementById('generateBtn');
-
-      idleState.style.display = 'none';
-      loadingState.classList.remove('hidden');
-      loadingState.classList.add('flex');
-      generateBtn.disabled = true;
-      generateBtn.classList.add('opacity-50');
-
-      try {
-        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey}`;
-        
-        const response = await fetch(endpoint, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: {
-              temperature: 0.4,
-              maxOutputTokens: 8192
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SciTHPT AI - Trợ Lý Nghiên Cứu Khoa Học Kỹ Thuật Dành Cho Học Sinh THPT</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            800: '#3730a3',
+                            900: '#312e81'
+                        },
+                        science: {
+                            50: '#ecfeff',
+                            500: '#06b6d4',
+                            600: '#0891b2',
+                            700: '#0e7490'
+                        }
+                    }
+                }
             }
-          })
-        });
+        }
+    </script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            color: #0f172a;
+        }
+        .code-font {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            .print-only {
+                display: block !important;
+            }
+            body {
+                background: white !important;
+                color: black !important;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col bg-slate-50">
 
-        const data = await response.json();
+    <!-- Top Navigation Bar -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm no-print">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Logo & Brand -->
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-cyan-400 flex items-center justify-center text-white shadow-md shadow-indigo-100">
+                        <i class="fa-solid fa-atom text-xl animate-spin" style="animation-duration: 12s;"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-indigo-700 to-cyan-600">SciTHPT AI</span>
+                            <span class="text-xs px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 font-semibold border border-indigo-200">Chuẩn TT 2026</span>
+                        </div>
+                        <p class="text-[11px] text-slate-500 hidden sm:block">Trợ lý Nghiên cứu Khoa học Kỹ thuật Học sinh THPT</p>
+                    </div>
+                </div>
 
-        if (data.error) {
-          throw new Error(data.error.message || 'Lỗi từ Gemini API');
+                <!-- Right Quick Actions -->
+                <div class="flex items-center gap-2 sm:gap-3">
+                    <button id="openRubricBtn" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-slate-700 hover:text-indigo-600 hover:bg-slate-100 border border-slate-200 transition">
+                        <i class="fa-solid fa-clipboard-check text-cyan-600"></i>
+                        <span class="hidden sm:inline">Khung Tiêu Chí</span> (100đ)
+                    </button>
+                    <button id="openConfigBtn" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium bg-slate-100 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 border border-slate-200 transition">
+                        <i class="fa-solid fa-key text-indigo-600"></i>
+                        <span class="hidden md:inline">Cài đặt API</span>
+                        <span id="apiStatusBadge" class="w-2 h-2 rounded-full bg-amber-500 inline-block" title="Chưa nhập API Key (Đang dùng Mock Data thông minh)"></span>
+                    </button>
+                    <button onclick="window.print()" class="p-2 text-slate-600 hover:text-slate-900 rounded-lg hover:bg-slate-100 border border-slate-200" title="In hoặc lưu PDF">
+                        <i class="fa-solid fa-print"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab Navigation Bar -->
+        <nav class="bg-slate-50 border-t border-slate-200 px-4 sm:px-6 lg:px-8">
+            <div class="max-w-7xl mx-auto flex space-x-1 sm:space-x-3 overflow-x-auto py-2 scrollbar-none" id="mainTabContainer">
+                <button data-tab="tab-idea" class="tab-btn active flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold transition bg-indigo-600 text-white shadow-sm">
+                    <i class="fa-solid fa-lightbulb"></i>
+                    <span>1. Ý Tưởng & Đặt Vấn Đề</span>
+                </button>
+                <button data-tab="tab-design" class="tab-btn flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-200 transition">
+                    <i class="fa-solid fa-file-contract"></i>
+                    <span>2. Khung Báo Cáo 15 Trang</span>
+                </button>
+                <button data-tab="tab-logbook" class="tab-btn flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-200 transition">
+                    <i class="fa-solid fa-book-journal-whills"></i>
+                    <span>3. Nhật Ký Nghiên Cứu (Đ.14)</span>
+                </button>
+                <button data-tab="tab-interview" class="tab-btn flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-200 transition">
+                    <i class="fa-solid fa-user-tie"></i>
+                    <span>4. Phỏng Vấn Giám Khảo (35đ)</span>
+                </button>
+                <button data-tab="tab-compliance" class="tab-btn flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-200 transition">
+                    <i class="fa-solid fa-shield-halved"></i>
+                    <span>5. Liêm Chính & An Toàn</span>
+                </button>
+            </div>
+        </nav>
+    </header>
+
+    <!-- API Modal -->
+    <div id="apiModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden no-print">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+                <div class="flex items-center gap-2">
+                    <div class="p-2 bg-indigo-50 text-indigo-600 rounded-lg"><i class="fa-solid fa-key"></i></div>
+                    <h3 class="font-bold text-slate-800 text-base">Cấu hình Gemini API</h3>
+                </div>
+                <button id="closeApiModal" class="text-slate-400 hover:text-slate-600 text-lg">&times;</button>
+            </div>
+            <div class="mt-4 space-y-3 text-sm text-slate-600">
+                <p>Nhập Google Gemini API Key của bạn để sử dụng các phản hồi trí tuệ nhân tạo chuyên sâu trực tiếp từ model <code>gemini-3-flash-preview</code>.</p>
+                <div class="p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs text-amber-800">
+                    <i class="fa-solid fa-circle-info mr-1"></i> Nếu để trống, hệ thống sẽ tự động dùng <strong>bộ sinh dữ liệu thông minh giả lập (Mock Engine)</strong> bám sát đúng quy chuẩn TT 2026 để bạn vẫn thực hành mượt mà!
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Gemini API Key</label>
+                    <input type="password" id="geminiApiKeyInput" placeholder="AIzaSy..." class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none code-font text-xs">
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end gap-2">
+                <button id="clearApiKeyBtn" class="px-3 py-2 text-xs font-medium text-rose-600 hover:bg-rose-50 rounded-lg transition">Xóa Key</button>
+                <button id="saveApiKeyBtn" class="px-4 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition shadow-sm">Lưu cấu hình</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rubric Modal (Phụ lục 7) -->
+    <div id="rubricModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden no-print">
+        <div class="bg-white rounded-2xl max-w-3xl w-full max-h-[85vh] flex flex-col p-6 shadow-2xl border border-slate-200">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-200">
+                <div>
+                    <h3 class="font-bold text-slate-800 text-lg flex items-center gap-2">
+                        <i class="fa-solid fa-award text-amber-500"></i>
+                        Thang Điểm Đánh Giá Dự Án (100 Điểm)
+                    </h3>
+                    <p class="text-xs text-slate-500">Theo Phụ lục 7 - Dự thảo Thông tư quy chế Cuộc thi KHKT học sinh trung học 2026</p>
+                </div>
+                <button id="closeRubricModal" class="text-slate-400 hover:text-slate-600 text-2xl leading-none">&times;</button>
+            </div>
+            <div class="overflow-y-auto pr-2 mt-4 space-y-4 text-xs">
+                <div class="bg-indigo-50/70 p-3 rounded-xl border border-indigo-100">
+                    <div class="flex justify-between items-center font-bold text-indigo-900 text-sm mb-1">
+                        <span>I. Câu hỏi / Vấn đề nghiên cứu</span>
+                        <span class="px-2 py-0.5 rounded bg-indigo-200 text-indigo-800">10 điểm</span>
+                    </div>
+                    <ul class="list-disc list-inside space-y-1 text-slate-700">
+                        <li><strong>1. Mục tiêu & đóng góp (5đ):</strong> Mục tiêu rõ ràng; đóng góp vào lĩnh vực (DA Khoa học) hoặc mô tả rõ nhu cầu thực tế, tiêu chí giải pháp (DA Kỹ thuật).</li>
+                        <li><strong>2. Tính khả kiểm chứng / Giới hạn (5đ):</strong> Kiểm chứng được bằng phương pháp khoa học hoặc giải thích rõ ràng các ràng buộc, giới hạn kỹ thuật.</li>
+                    </ul>
+                </div>
+                <div class="bg-blue-50/70 p-3 rounded-xl border border-blue-100">
+                    <div class="flex justify-between items-center font-bold text-blue-900 text-sm mb-1">
+                        <span>II. Thiết kế và phương pháp nghiên cứu</span>
+                        <span class="px-2 py-0.5 rounded bg-blue-200 text-blue-800">15 điểm</span>
+                    </div>
+                    <ul class="list-disc list-inside space-y-1 text-slate-700">
+                        <li><strong>1. Thiết kế nghiên cứu (5đ):</strong> Kế hoạch khoa học, logic hoặc so sánh các phương án khả thi kỹ thuật trước khi chọn.</li>
+                        <li><strong>2. Phương pháp nghiên cứu (5đ):</strong> Thu thập dữ liệu tin cậy, phù hợp mục tiêu hoặc phương pháp triển khai tạo nguyên mẫu.</li>
+                        <li><strong>3. Biến số, đối chứng / Nguyên mẫu (5đ):</strong> Biến độc lập/phụ thuộc/kiểm soát rõ ràng hoặc nguyên mẫu thử nghiệm khả thi.</li>
+                    </ul>
+                </div>
+                <div class="bg-emerald-50/70 p-3 rounded-xl border border-emerald-100">
+                    <div class="flex justify-between items-center font-bold text-emerald-900 text-sm mb-1">
+                        <span>III. Thực hiện, Phân tích & Chế tạo (Căn cứ Điều 14)</span>
+                        <span class="px-2 py-0.5 rounded bg-emerald-200 text-emerald-800">20 điểm</span>
+                    </div>
+                    <ul class="list-disc list-inside space-y-1 text-slate-700">
+                        <li><strong>1. Quá trình thu thập / chế tạo (5đ):</strong> Xử lý dữ liệu hệ thống, khách quan hoặc nguyên mẫu đúng thiết kế.</li>
+                        <li><strong>2. Khả năng kiểm chứng / thử nghiệm (5đ):</strong> Lặp lại kết quả hoặc kiểm tra trong nhiều điều kiện.</li>
+                        <li><strong>3. Phương pháp phân tích thống kê (5đ):</strong> Toán học thống kê chuẩn xác, mức độ hoàn thiện sản phẩm.</li>
+                        <li><strong>4. Đầy đủ dữ liệu & Nhật ký gốc (5đ):</strong> <em>Đặc biệt quan trọng:</em> Nhật ký nghiên cứu, dữ liệu gốc đối chiếu tính liên tục, trung thực.</li>
+                    </ul>
+                </div>
+                <div class="bg-purple-50/70 p-3 rounded-xl border border-purple-100">
+                    <div class="flex justify-between items-center font-bold text-purple-900 text-sm mb-1">
+                        <span>IV. Tính sáng tạo và tác động tiềm năng</span>
+                        <span class="px-2 py-0.5 rounded bg-purple-200 text-purple-800">20 điểm</span>
+                    </div>
+                    <ul class="list-disc list-inside space-y-1 text-slate-700">
+                        <li>Tính mới trong cách tiếp cận (5đ) • Sáng tạo trong thiết kế/phương pháp (5đ) • Tác động vào lĩnh vực (5đ) • Tác động kinh tế - xã hội - môi trường (5đ).</li>
+                    </ul>
+                </div>
+                <div class="bg-amber-50/70 p-3 rounded-xl border border-amber-100">
+                    <div class="flex justify-between items-center font-bold text-amber-900 text-sm mb-1">
+                        <span>V. Trình bày & Phỏng vấn áp phích/poster</span>
+                        <span class="px-2 py-0.5 rounded bg-amber-200 text-amber-800">35 điểm</span>
+                    </div>
+                    <ul class="list-disc list-inside space-y-1 text-slate-700">
+                        <li>Bố cục poster logic (5đ) • Minh chứng trên poster đầy đủ (5đ) • Trả lời phỏng vấn rõ ràng, sâu sắc (5đ) • Vững cơ sở lý thuyết khoa học/kỹ thuật (5đ) • Hiểu rõ giới hạn kết quả (5đ) • <strong>Mức độ độc lập thực chất của học sinh</strong> (5đ) • Kế hoạch tương lai & sự đồng đều của nhóm (5đ).</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="mt-4 pt-3 border-t border-slate-200 flex justify-end">
+                <button onclick="document.getElementById('rubricModal').classList.add('hidden')" class="px-4 py-1.5 bg-slate-800 text-white rounded-lg text-xs font-semibold">Đã Hiểu</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast System -->
+    <div id="toast" class="fixed bottom-5 right-5 z-50 transform transition-all duration-300 translate-y-20 opacity-0 pointer-events-none flex items-center gap-3 px-4 py-3 rounded-xl shadow-xl text-sm font-medium text-white bg-slate-900">
+        <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400"></i>
+        <span id="toastMsg">Thao tác thành công!</span>
+    </div>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+
+        <!-- ================= TAB 1: Ý TƯỞNG & ĐẶT VẤN ĐỀ ================= -->
+        <section id="tab-idea" class="tab-content block space-y-6">
+            <!-- Header Card -->
+            <div class="bg-gradient-to-r from-indigo-700 via-indigo-600 to-cyan-600 rounded-3xl p-6 sm:p-8 text-white shadow-lg relative overflow-hidden">
+                <div class="absolute -right-8 -bottom-8 opacity-10 text-9xl pointer-events-none">
+                    <i class="fa-solid fa-lightbulb"></i>
+                </div>
+                <div class="max-w-3xl relative z-10 space-y-2">
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-white/20 backdrop-blur-md text-white border border-white/20">
+                        <i class="fa-solid fa-compass"></i> Tiêu chí I: Câu hỏi & Vấn đề nghiên cứu (10đ)
+                    </span>
+                    <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Kiến Tạo Ý Tưởng & Đặt Vấn Đề Chuẩn KHKT</h1>
+                    <p class="text-indigo-100 text-xs sm:text-sm leading-relaxed">
+                        Hỗ trợ học sinh định vị đề tài thuộc <strong>16 lĩnh vực quy chuẩn Bộ GD&ĐT 2026</strong>. Phân lập rạch ròi giữa <em>Đề tài Khoa học</em> (kiểm chứng giả thuyết, biến số, đối chứng) và <em>Đề tài Kỹ thuật</em> (nhu cầu thực tiễn, nguyên mẫu, kiểm thử).
+                    </p>
+                </div>
+            </div>
+
+            <!-- Form & Settings Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Left Form Panel -->
+                <div class="lg:col-span-5 bg-white p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                    <h2 class="text-base font-bold text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-3">
+                        <i class="fa-solid fa-sliders text-indigo-600"></i>
+                        Thông Tin Định Hướng Ban Đầu
+                    </h2>
+
+                    <!-- 16 Lĩnh vực chuẩn -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">
+                            1. Lĩnh Vực Nghiên Cứu (16 Lĩnh Vực Chuẩn TT 2026) <span class="text-rose-500">*</span>
+                        </label>
+                        <select id="ideaCategory" class="w-full text-xs sm:text-sm p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                            <option value="1. Sinh học">1. Sinh học</option>
+                            <option value="2. Sinh học ứng dụng">2. Sinh học ứng dụng</option>
+                            <option value="3. Khoa học vật chất">3. Khoa học vật chất</option>
+                            <option value="4. Khoa học trái đất">4. Khoa học trái đất</option>
+                            <option value="5. Toán học">5. Toán học</option>
+                            <option value="6. Thống kê">6. Thống kê</option>
+                            <option value="7. Máy tính">7. Máy tính</option>
+                            <option value="8. Công nghệ thông tin">8. Công nghệ thông tin</option>
+                            <option value="9. Kỹ thuật cơ khí và cơ kỹ thuật">9. Kỹ thuật cơ khí và cơ kỹ thuật</option>
+                            <option value="10. Kỹ thuật điện, điện tử và viễn thông">10. Kỹ thuật điện, điện tử và viễn thông</option>
+                            <option value="11. Kỹ thuật hóa học, vật liệu, luyện kim và môi trường" selected>11. Kỹ thuật hóa học, vật liệu, luyện kim và môi trường</option>
+                            <option value="12. Vật lý kỹ thuật">12. Vật lý kỹ thuật</option>
+                            <option value="13. Kỹ thuật địa chất, địa vật lý và trắc địa">13. Kỹ thuật địa chất, địa vật lý và trắc địa</option>
+                            <option value="14. Kỹ thuật mỏ">14. Kỹ thuật mỏ</option>
+                            <option value="15. Xây dựng">15. Xây dựng</option>
+                            <option value="16. Khoa học xã hội và hành vi">16. Khoa học xã hội và hành vi</option>
+                        </select>
+                    </div>
+
+                    <!-- Loại hình dự tài -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">
+                            2. Loại Hình Dự Án
+                        </label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <label class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 cursor-pointer hover:bg-indigo-50 transition text-xs">
+                                <input type="radio" name="projectType" value="science" checked class="text-indigo-600 focus:ring-indigo-500">
+                                <div>
+                                    <span class="font-bold text-slate-800 block">Khoa Học</span>
+                                    <span class="text-[10px] text-slate-500">Kiểm chứng giả thuyết</span>
+                                </div>
+                            </label>
+                            <label class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 cursor-pointer hover:bg-cyan-50 transition text-xs">
+                                <input type="radio" name="projectType" value="engineering" class="text-cyan-600 focus:ring-cyan-500">
+                                <div>
+                                    <span class="font-bold text-slate-800 block">Kỹ Thuật</span>
+                                    <span class="text-[10px] text-slate-500">Chế tạo nguyên mẫu</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Hiện trạng địa phương / Vấn đề đời sống -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">
+                            3. Nhu cầu thực tế / Vấn đề bức thiết tại địa phương
+                        </label>
+                        <textarea id="localIssueInput" rows="3" placeholder="Ví dụ: Ô nhiễm vỏ trấu nông nghiệp, học sinh bị gù lưng khi ngồi học, tình trạng nghiện mạng xã hội ở trường THPT, nước thải ao tôm..." class="w-full text-xs sm:text-sm p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none"></textarea>
+                    </div>
+
+                    <!-- Điều kiện phòng lab / kỹ thuật khả thi tại trường THPT -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">
+                            4. Năng lực & Trang thiết bị hiện có của học sinh
+                        </label>
+                        <input id="resourceInput" type="text" placeholder="Ví dụ: Phòng thực hành Hóa - Sinh trường, Arduino/ESP32, khảo sát Google Forms..." class="w-full text-xs sm:text-sm p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    </div>
+
+                    <button id="generateIdeasBtn" class="w-full py-3 bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-700 hover:to-cyan-700 text-white font-bold rounded-xl shadow-md transition flex items-center justify-center gap-2 text-sm">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                        <span>AI Đề Xuất 3 Đề Tài Chuẩn Form KHKT</span>
+                    </button>
+                    <p class="text-[11px] text-slate-400 text-center italic">
+                        Tuân thủ liêm chính: Gợi ý đóng vai trò tham khảo khơi gợi tư duy, không thay thế ý tưởng độc lập của học sinh.
+                    </p>
+                </div>
+
+                <!-- Right Output Panel -->
+                <div class="lg:col-span-7 space-y-4">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-list-check text-cyan-600"></i>
+                            Gợi Ý Đề Tài & Phân Tích Cấu Trúc Khoa Học
+                        </h2>
+                        <span id="ideaStatusIndicator" class="text-xs text-slate-400">Sẵn sàng phân tích</span>
+                    </div>
+
+                    <div id="ideaResultList" class="space-y-4">
+                        <!-- Default placeholder card -->
+                        <div class="bg-white p-8 rounded-2xl border border-dashed border-slate-300 text-center space-y-3">
+                            <div class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto text-slate-400 text-xl">
+                                <i class="fa-regular fa-lightbulb"></i>
+                            </div>
+                            <h3 class="font-semibold text-slate-700 text-sm">Chưa có đề tài nào được tạo</h3>
+                            <p class="text-xs text-slate-500 max-w-md mx-auto">
+                                Hãy chọn lĩnh vực, nhập bài toán thực tế và bấm nút đề xuất. AI sẽ phân tách rõ ràng Câu hỏi nghiên cứu, Biến số độc lập/phụ thuộc hoặc Tiêu chuẩn thiết kế kỹ thuật.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= TAB 2: KHUNG BÁO CÁO 15 TRANG ================= -->
+        <section id="tab-design" class="tab-content hidden space-y-6">
+            <!-- Header Card -->
+            <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-6 sm:p-8 text-white shadow-lg relative overflow-hidden">
+                <div class="max-w-3xl relative z-10 space-y-2">
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-500/30 text-indigo-300 border border-indigo-500/30">
+                        <i class="fa-solid fa-ruler-combined"></i> Chuẩn Phụ lục 4 & Yêu Cầu Định Dạng 15 Trang
+                    </span>
+                    <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Khung Báo Cáo KHKT & Thiết Kế Thí Nghiệm</h1>
+                    <p class="text-slate-300 text-xs sm:text-sm">
+                        Quy định bất di bất dịch: Báo cáo <strong>tối đa 15 trang</strong> (kể cả phụ lục & tài liệu tham khảo), căn lề <strong>Trái 3cm, Phải 2cm, Trên 2cm, Dưới 2cm</strong>. Giãn dòng đơn, giãn đoạn 3pt. <strong>TUYỆT ĐỐI KHÔNG GHI TÊN, TRƯỜNG, ĐỊA CHỈ TRÊN BÁO CÁO</strong> để đảm bảo chấm mù.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Tool Control & Generator -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Parameters form -->
+                <div class="lg:col-span-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                    <h3 class="font-bold text-slate-800 text-sm border-b pb-2 flex items-center gap-2">
+                        <i class="fa-solid fa-file-pen text-indigo-600"></i>
+                        Thông Tin Đề Tài Của Bạn
+                    </h3>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Tên Đề Tài</label>
+                        <input id="reportTitleInput" type="text" placeholder="Ví dụ: Nghiên cứu chế tạo màng bọc sinh học từ vỏ trấu..." class="w-full text-xs sm:text-sm p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Lĩnh Vực</label>
+                        <select id="reportCategorySelect" class="w-full text-xs sm:text-sm p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                            <option>11. Kỹ thuật hóa học, vật liệu, luyện kim và môi trường</option>
+                            <option>8. Công nghệ thông tin</option>
+                            <option>2. Sinh học ứng dụng</option>
+                            <option>10. Kỹ thuật điện, điện tử và viễn thông</option>
+                            <option>16. Khoa học xã hội và hành vi</option>
+                            <option>7. Máy tính</option>
+                            <option>9. Kỹ thuật cơ khí và cơ kỹ thuật</option>
+                            <option>1. Sinh học</option>
+                            <option>Khác (trong 16 lĩnh vực)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Phương Pháp / Mô Hình Chính</label>
+                        <textarea id="reportMethodInput" rows="2" placeholder="Ví dụ: Chiết xuất Silica bằng NaOH, tạo màng kết hợp PVA/Glycerol, kiểm tra độ bền kéo..." class="w-full text-xs p-2 bg-slate-50 border border-slate-300 rounded-xl"></textarea>
+                    </div>
+
+                    <button id="generateOutlineBtn" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-xs transition shadow flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-diagram-project"></i>
+                        <span>AI Xây Dàn Ý 15 Trang & Cảnh Báo Lỗi Trừ Điểm</span>
+                    </button>
+
+                    <!-- Formatting Specs Reminder -->
+                    <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1.5 text-slate-600">
+                        <div class="font-bold text-slate-700 flex items-center gap-1.5">
+                            <i class="fa-solid fa-circle-exclamation text-amber-500"></i>
+                            Quy Chuẩn Định Dạng Thể Thức (Bắt Buộc):
+                        </div>
+                        <p>• <strong>Dung lượng:</strong> Không vượt quá 15 trang A4.</p>
+                        <p>• <strong>Canh lề:</strong> Trái: 3.0cm | Phải: 2.0cm | Trên: 2.0cm | Dưới: 2.0cm.</p>
+                        <p>• <strong>Phông chữ:</strong> Times New Roman, cỡ 13, cách dòng Single, cách đoạn Before/After 3pt.</p>
+                        <p class="text-rose-600 font-medium">• <strong>Tuyệt đối KHÔNG ghi:</strong> Họ tên học sinh, giáo viên hướng dẫn, tên trường, địa phương hoặc hình ảnh có mặt học sinh trên báo cáo.</p>
+                    </div>
+                </div>
+
+                <!-- Outline Preview Panel -->
+                <div class="lg:col-span-8 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col">
+                    <div class="flex items-center justify-between pb-3 border-b border-slate-200">
+                        <div class="flex items-center gap-2">
+                            <span class="p-2 rounded-lg bg-indigo-50 text-indigo-600 text-sm"><i class="fa-solid fa-book-open"></i></span>
+                            <div>
+                                <h3 class="font-bold text-slate-800 text-sm">Bản Khung Báo Cáo KHKT Chuẩn Phụ Lục 4</h3>
+                                <p class="text-[11px] text-slate-400">Được phân bổ số trang chi tiết để không bị vi phạm trần 15 trang</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button id="copyOutlineBtn" class="px-3 py-1.5 text-xs font-medium text-slate-600 hover:text-indigo-600 hover:bg-slate-100 rounded-lg border border-slate-200 transition">
+                                <i class="fa-regular fa-copy"></i> Sao chép
+                            </button>
+                            <button onclick="window.print()" class="px-3 py-1.5 text-xs font-semibold bg-slate-800 text-white rounded-lg hover:bg-slate-900 transition">
+                                <i class="fa-solid fa-file-arrow-down"></i> Xuất / In
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Outline Document View -->
+                    <div id="outlineContent" class="mt-4 flex-1 overflow-y-auto space-y-4 text-xs sm:text-sm text-slate-700 leading-relaxed font-normal">
+                        <!-- Placeholder Default -->
+                        <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+                            <div class="text-center font-bold text-slate-900 uppercase text-sm border-b pb-2">
+                                Khung Cấu Trúc Mẫu 15 Trang (Phụ lục 4)
+                            </div>
+                            <div class="space-y-3 text-xs">
+                                <div class="flex justify-between items-center p-2 bg-white rounded border">
+                                    <span><strong>Trang 1: Bìa Báo Cáo</strong> (Chỉ ghi Tên dự án, Lĩnh vực, Năm học - KHÔNG TÊN HỌC SINH/TRƯỜNG)</span>
+                                    <span class="text-slate-400">1 trang</span>
+                                </div>
+                                <div class="flex justify-between items-center p-2 bg-white rounded border">
+                                    <span><strong>Trang 2: Mục lục, Danh mục chữ viết tắt, Bảng & Hình</strong></span>
+                                    <span class="text-slate-400">1 trang</span>
+                                </div>
+                                <div class="flex justify-between items-center p-2 bg-white rounded border">
+                                    <span><strong>Trang 3-4: 1. Lý do chọn đề tài & Tổng quan nghiên cứu</strong> (Tính cấp thiết, giải pháp hiện có, khoảng trống nghiên cứu)</span>
+                                    <span class="text-slate-400">2 trang</span>
+                                </div>
+                                <div class="flex justify-between items-center p-2 bg-white rounded border">
+                                    <span><strong>Trang 5: 2. Câu hỏi nghiên cứu / Mục tiêu & Giới hạn đề tài</strong> (Xác định biến số đối chứng hoặc yêu cầu kỹ thuật)</span>
+                                    <span class="text-slate-400">1 trang</span>
+                                </div>
+                                <div class="flex justify-between items-center p-2 bg-white rounded border">
+                                    <span><strong>Trang 6-7: 3. Thiết kế & Phương pháp nghiên cứu</strong> (Kế hoạch thực nghiệm, quy trình thu thập dữ liệu)</span>
+                                    <span class="text-slate-400">2 trang</span>
+                                </div>
+                                <div class="flex justify-between items-center p-2 bg-white rounded border">
+                                    <span><strong>Trang 8-12: 4. Kết quả nghiên cứu & Thảo luận</strong> (Bảng số liệu, biểu đồ xử lý thống kê, đối chiếu mục tiêu, độ tin cậy)</span>
+                                    <span class="text-slate-400">5 trang</span>
+                                </div>
+                                <div class="flex justify-between items-center p-2 bg-white rounded border">
+                                    <span><strong>Trang 13: 5. Kết luận, Tính mới & Ý nghĩa thực tiễn</strong> (Tác động xã hội, đề xuất hướng phát triển tiếp)</span>
+                                    <span class="text-slate-400">1 trang</span>
+                                </div>
+                                <div class="flex justify-between items-center p-2 bg-white rounded border">
+                                    <span><strong>Trang 14-15: Tài liệu tham khảo & Phụ lục tóm tắt dữ liệu gốc</strong></span>
+                                    <span class="text-slate-400">2 trang</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= TAB 3: NHẬT KÝ NGHIÊN CỨU & DỮ LIỆU GỐC ================= -->
+        <section id="tab-logbook" class="tab-content hidden space-y-6">
+            <!-- Header Card -->
+            <div class="bg-gradient-to-r from-emerald-700 via-teal-600 to-cyan-600 rounded-3xl p-6 sm:p-8 text-white shadow-lg relative overflow-hidden">
+                <div class="max-w-3xl relative z-10 space-y-2">
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-white/20 backdrop-blur-md text-white border border-white/20">
+                        <i class="fa-solid fa-fingerprint"></i> Căn cứ Điều 14 & Tiêu chí III.4 (Đặc biệt quan trọng)
+                    </span>
+                    <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Sổ Tay Nhật Ký Nghiên Cứu & Dữ Liệu Gốc</h1>
+                    <p class="text-emerald-100 text-xs sm:text-sm leading-relaxed">
+                        Quy chế KHKT 2026 yêu cầu: <strong>Nhật ký nghiên cứu và dữ liệu gốc là căn cứ đối chiếu mức độ trung thực, liên tục và độc lập của học sinh</strong>. Bất kỳ dự án nào không chứng minh được tiến trình qua nhật ký sẽ bị đánh giá điểm thấp ở tiêu chí Liêm chính khoa học.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Logbook UI Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Left: Quick Entry Form -->
+                <div class="lg:col-span-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                    <div class="flex items-center justify-between pb-2 border-b">
+                        <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                            <i class="fa-solid fa-pen-nib text-teal-600"></i>
+                            Ghi Nhật Ký Tiến Trình
+                        </h3>
+                        <span class="text-[11px] text-teal-700 bg-teal-50 px-2 py-0.5 rounded font-medium">Trung thực 100%</span>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Ngày Thực Hiện</label>
+                        <input id="logDate" type="date" class="w-full text-xs p-2 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Giai Đoạn Nghiên Cứu</label>
+                        <select id="logPhase" class="w-full text-xs p-2 bg-slate-50 border border-slate-300 rounded-xl">
+                            <option>1. Khởi tạo ý tưởng & Đọc tài liệu tham khảo</option>
+                            <option>2. Thiết kế phương án thí nghiệm / Thiết kế CAD 3D</option>
+                            <option>3. Thực nghiệm thí nghiệm / Lập trình / Chế tạo</option>
+                            <option>4. Gặp lỗi sai sót & Điều chỉnh thông số (Thực chất)</option>
+                            <option>5. Thu thập dữ liệu & Xử lý số liệu thống kê</option>
+                            <option>6. Viết báo cáo & Thiết kế áp phích Poster</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Nội dung công việc & Thao tác chi tiết</label>
+                        <textarea id="logAction" rows="3" placeholder="Ghi cụ thể các bước: Cân 5g hóa chất X bằng cân phân tích 0.001g, nhiệt độ phòng 28°C..." class="w-full text-xs p-2 bg-slate-50 border border-slate-300 rounded-xl"></textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Kết quả đo lường / Số liệu thô / Hiện tượng quan sát</label>
+                        <textarea id="logDataRaw" rows="2" placeholder="Ví dụ: Lô mẫu 1 đông kết sau 45 phút, lô mẫu 2 bị nứt vỡ do nhiệt độ sấy quá cao 80°C..." class="w-full text-xs p-2 bg-slate-50 border border-slate-300 rounded-xl"></textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Người thực hiện</label>
+                        <input id="logMember" type="text" placeholder="Học sinh 1 (hoặc Học sinh 1 & 2)" class="w-full text-xs p-2 bg-slate-50 border border-slate-300 rounded-xl">
+                    </div>
+
+                    <div class="flex gap-2 pt-2">
+                        <button id="addLogEntryBtn" class="flex-1 py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-xl text-xs transition shadow flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-plus"></i> Lưu Nhật Ký
+                        </button>
+                        <button id="aiEnhanceLogBtn" class="px-3 py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl text-xs font-semibold border border-indigo-200" title="AI tư vấn bổ sung chi tiết khoa học để tránh nghi vấn đạo văn">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> AI Chuẩn Hóa
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Right: Timeline & Logbook Entries -->
+                <div class="lg:col-span-8 space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                                <i class="fa-solid fa-timeline text-teal-600"></i>
+                                Tiến Trình Nhật Ký Nghiên Cứu Thực Tế
+                            </h3>
+                            <p class="text-xs text-slate-500">Bảo đảm thời gian nghiên cứu không quá 12 tháng liên tục theo quy chế</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button id="clearLogsBtn" class="text-xs text-rose-600 hover:underline">Xóa tất cả</button>
+                            <button id="exportLogbookBtn" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-900 text-white text-xs font-medium rounded-lg flex items-center gap-1.5">
+                                <i class="fa-solid fa-download"></i> Xuất Sổ Nhật Ký
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="logbookList" class="space-y-3 max-h-[600px] overflow-y-auto pr-1">
+                        <!-- Dynamic Log Cards injected here -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= TAB 4: MÔ PHỎNG PHỎNG VẤN GIÁM KHẢO ================= -->
+        <section id="tab-interview" class="tab-content hidden space-y-6">
+            <!-- Header Card -->
+            <div class="bg-gradient-to-r from-purple-800 via-indigo-900 to-slate-900 rounded-3xl p-6 sm:p-8 text-white shadow-lg relative overflow-hidden">
+                <div class="max-w-3xl relative z-10 space-y-2">
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-purple-500/30 text-purple-200 border border-purple-400/30">
+                        <i class="fa-solid fa-comments"></i> Tiêu chí V: Kỹ Năng Trình Bày & Vấn Đáp Poster (35đ)
+                    </span>
+                    <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Phòng Luyện Phỏng Vấn Giám Khảo Khó Tính</h1>
+                    <p class="text-purple-200 text-xs sm:text-sm leading-relaxed">
+                        Phần vấn đáp tại Gian trưng bày (Poster) chiếm tới <strong>35% tổng số điểm</strong>! Giám khảo chuyên môn sẽ đặt những câu hỏi xoáy sâu vào: <em>"Biến kiểm soát là gì?", "Em tự làm hay nhờ giảng viên đại học?", "Nhật ký em ghi số liệu này ở đâu?", "Giới hạn sai số của thiết bị là bao nhiêu?"</em>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Simulator Chat Interface -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Side Settings for Interview -->
+                <div class="lg:col-span-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                    <h3 class="font-bold text-slate-800 text-sm border-b pb-2 flex items-center gap-2">
+                        <i class="fa-solid fa-user-graduate text-purple-600"></i>
+                        Cấu Hình Buổi Phỏng Vấn
+                    </h3>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Phong Cách Giám Khảo</label>
+                        <select id="judgePersona" class="w-full text-xs p-2 bg-slate-50 border border-slate-300 rounded-xl">
+                            <option value="strict">Giám khảo Khó tính - Xoáy sâu liêm chính & Mức độ tự làm (Đề xuất)</option>
+                            <option value="technical">Giám khảo Chuyên gia - Xoáy vào cơ sở toán học & Sai số kỹ thuật</option>
+                            <option value="applicability">Giám khảo Ứng dụng - Xoáy vào giá thành thực tế & Tác động xã hội</option>
+                            <option value="friendly">Giám khảo Hướng dẫn - Gợi mở và nhận xét điểm mạnh/yếu</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Tên Đề Tài & Nội dung tóm tắt để Giám khảo hỏi</label>
+                        <textarea id="interviewTopic" rows="3" placeholder="Nhập đề tài hoặc dán tóm tắt dự án của bạn để giám khảo khai thác câu hỏi chuẩn..." class="w-full text-xs p-2 bg-slate-50 border border-slate-300 rounded-xl"></textarea>
+                    </div>
+
+                    <button id="startInterviewBtn" class="w-full py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-xl text-xs transition shadow flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-play"></i> Bắt Đầu Buổi Vấn Đáp Thử
+                    </button>
+
+                    <div class="p-3 bg-purple-50 rounded-xl border border-purple-100 text-xs text-purple-900 space-y-1">
+                        <p class="font-bold"><i class="fa-solid fa-lightbulb text-amber-500 mr-1"></i> Mẹo 35đ Vấn Đáp:</p>
+                        <p>1. Nói dõng dạc, thẳng thắn nhận biết giới hạn của đề tài (không nói quá kết quả).</p>
+                        <p>2. Luôn giơ nhật ký nghiên cứu khi giám khảo hỏi về minh chứng số liệu.</p>
+                        <p>3. Đối với nhóm 2 học sinh: Cả 2 phải cùng trả lời và thể hiện sự am hiểu tương đương.</p>
+                    </div>
+                </div>
+
+                <!-- Chat Box -->
+                <div class="lg:col-span-8 bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col h-[580px]">
+                    <!-- Chat Header -->
+                    <div class="px-5 py-3 border-b border-slate-200 flex items-center justify-between bg-slate-50 rounded-t-2xl">
+                        <div class="flex items-center gap-3">
+                            <div class="w-9 h-9 rounded-full bg-purple-100 flex items-center justify-center text-purple-700 font-bold text-sm">
+                                <i class="fa-solid fa-user-tie"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-slate-800 text-xs sm:text-sm">Hội đồng Giám khảo KHKT</h4>
+                                <p class="text-[10px] text-slate-400">Đang phỏng vấn trực tiếp tại Gian trưng bày Poster</p>
+                            </div>
+                        </div>
+                        <button id="resetChatBtn" class="text-xs text-slate-400 hover:text-rose-600 flex items-center gap-1">
+                            <i class="fa-solid fa-rotate-right"></i> Làm mới
+                        </button>
+                    </div>
+
+                    <!-- Chat Messages List -->
+                    <div id="chatMessages" class="flex-1 p-4 overflow-y-auto space-y-3 text-xs sm:text-sm">
+                        <!-- Welcome message -->
+                        <div class="flex gap-3">
+                            <div class="w-8 h-8 rounded-full bg-purple-600 text-white flex-shrink-0 flex items-center justify-center text-xs">
+                                GK
+                            </div>
+                            <div class="bg-purple-50 text-slate-800 p-3.5 rounded-2xl rounded-tl-none max-w-[85%] border border-purple-100 space-y-1">
+                                <p class="font-semibold text-purple-900 text-xs">Giám Khảo Cuộc Thi KHKT:</p>
+                                <p>"Chào em. Chúc mừng em đã vào vòng thi chung cuộc. Hãy giới thiệu thật ngắn gọn trong 1 phút: <strong>Vấn đề thực tiễn đề tài của em giải quyết là gì</strong> và <strong>kết quả nghiên cứu này do chính em thực hiện hay có sự hỗ trợ của ai khác?</strong>"</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Input Box -->
+                    <div class="p-3 border-t border-slate-200 bg-white rounded-b-2xl">
+                        <div class="flex gap-2">
+                            <input id="chatInput" type="text" placeholder="Nhập câu trả lời của em gửi tới giám khảo..." class="flex-1 text-xs sm:text-sm px-3 py-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:outline-none">
+                            <button id="sendChatBtn" class="px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-xl text-xs transition flex items-center gap-1.5 shadow">
+                                <i class="fa-solid fa-paper-plane"></i>
+                                <span class="hidden sm:inline">Trả lời</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= TAB 5: TRẮC NGHIỆM AN TOÀN & KIỂM TRA CAM KẾT ================= -->
+        <section id="tab-compliance" class="tab-content hidden space-y-6">
+            <!-- Header Card -->
+            <div class="bg-gradient-to-r from-rose-700 via-rose-600 to-amber-600 rounded-3xl p-6 sm:p-8 text-white shadow-lg relative overflow-hidden">
+                <div class="max-w-3xl relative z-10 space-y-2">
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-white/20 backdrop-blur-md text-white border border-white/20">
+                        <i class="fa-solid fa-shield-halved"></i> Bản Cam Kết 8 Điều & Phân Loại Mức Độ Rủi Ro
+                    </span>
+                    <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Kiểm Tra Liêm Chính & An Toàn Nghiên Cứu</h1>
+                    <p class="text-rose-100 text-xs sm:text-sm leading-relaxed">
+                        Thực hiện nghiêm túc <strong>8 điều cam kết bắt buộc</strong> của Cuộc thi KHKT 2026. Dự án thuộc <em>mức cấm tuyệt đối</em> sẽ bị loại ngay. Cam kết rõ ràng về việc sử dụng AI: <strong>AI không thay thế hoạt động tự nghiên cứu, phân tích hoặc sáng tạo của học sinh.</strong>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Compliance Checklist -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Checklist Panel -->
+                <div class="lg:col-span-8 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-5">
+                    <div class="flex items-center justify-between pb-3 border-b">
+                        <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
+                            <i class="fa-solid fa-list-check text-rose-600"></i>
+                            8 Điều Cam Kết Tuân Thủ Dự Án Dự Thi (Thông Tư 2026)
+                        </h3>
+                        <span id="complianceScore" class="text-xs font-bold px-2.5 py-1 rounded-full bg-amber-100 text-amber-800">
+                            Đạt 0/8 điều
+                        </span>
+                    </div>
+
+                    <div class="space-y-3.5 text-xs sm:text-sm">
+                        <!-- Điều 1 -->
+                        <label class="flex items-start gap-3 p-3 rounded-xl border border-slate-200 hover:bg-slate-50 cursor-pointer transition">
+                            <input type="checkbox" class="compliance-check mt-1 w-4 h-4 text-indigo-600 rounded">
+                            <div>
+                                <strong class="text-slate-900 block font-semibold">1. Trung thực, khách quan và liêm chính khoa học:</strong>
+                                <span class="text-slate-500 text-xs">Không gian lận, không giả mạo số liệu, không sao chép trái phép hoặc trình bày kết quả người khác như của mình; tôn trọng bản quyền sở hữu trí tuệ.</span>
+                            </div>
+                        </label>
+
+                        <!-- Điều 2 -->
+                        <label class="flex items-start gap-3 p-3 rounded-xl border border-slate-200 hover:bg-slate-50 cursor-pointer transition">
+                            <input type="checkbox" class="compliance-check mt-1 w-4 h-4 text-indigo-600 rounded">
+                            <div>
+                                <strong class="text-slate-900 block font-semibold">2. Thời gian nghiên cứu không quá 12 tháng liên tục:</strong>
+                                <span class="text-slate-500 text-xs">Trong khoảng từ tháng 01 của năm liền kề trước năm tổ chức cuộc thi đến trước ngày khai mạc cấp quốc gia 30 ngày.</span>
+                            </div>
+                        </label>
+
+                        <!-- Điều 3 -->
+                        <label class="flex items-start gap-3 p-3 rounded-xl border border-slate-200 hover:bg-slate-50 cursor-pointer transition">
+                            <input type="checkbox" class="compliance-check mt-1 w-4 h-4 text-indigo-600 rounded">
+                            <div>
+                                <strong class="text-slate-900 block font-semibold">3. Thành viên dự án và mức độ đóng góp thực chất:</strong>
+                                <span class="text-slate-500 text-xs">Tối đa 2 học sinh/dự án. Không thay thế hay bổ sung thành viên sau khi đăng ký. Đóng góp của từng học sinh có khả năng kiểm chứng qua nhật ký nghiên cứu.</span>
+                            </div>
+                        </label>
+
+                        <!-- Điều 4 -->
+                        <label class="flex items-start gap-3 p-3 rounded-xl border border-slate-200 hover:bg-slate-50 cursor-pointer transition">
+                            <input type="checkbox" class="compliance-check mt-1 w-4 h-4 text-indigo-600 rounded">
+                            <div>
+                                <strong class="text-slate-900 block font-semibold">4. An toàn và quản lý rủi ro (Không thuộc mức cấm tuyệt đối):</strong>
+                                <span class="text-slate-500 text-xs">Không nghiên cứu vi sinh vật nguy hiểm, chất phóng xạ, vũ khí, độc chất nguy hại, hoặc thử nghiệm trên động vật có xương sống trái đạo đức.</span>
+                            </div>
+                        </label>
+
+                        <!-- Điều 5 -->
+                        <label class="flex items-start gap-3 p-3 rounded-xl border border-slate-200 hover:bg-slate-50 cursor-pointer transition">
+                            <input type="checkbox" class="compliance-check mt-1 w-4 h-4 text-indigo-600 rounded">
+                            <div>
+                                <strong class="text-slate-900 block font-semibold">5. Phê duyệt sơ bộ của cơ sở giáo dục:</strong>
+                                <span class="text-slate-500 text-xs">Dự án đã được trường THPT hoặc đơn vị dự thi thẩm định an toàn và đồng ý thông qua kế hoạch nghiên cứu trước khi thực hiện thí nghiệm.</span>
+                            </div>
+                        </label>
+
+                        <!-- Điều 6 -->
+                        <label class="flex items-start gap-3 p-3 rounded-xl border border-slate-200 hover:bg-slate-50 cursor-pointer transition">
+                            <input type="checkbox" class="compliance-check mt-1 w-4 h-4 text-indigo-600 rounded">
+                            <div>
+                                <strong class="text-slate-900 block font-semibold">6. Tuân thủ quy định trưng bày Poster:</strong>
+                                <span class="text-slate-500 text-xs">Không trưng bày hóa chất độc, sinh vật sống, thiết bị nguy hiểm, thức ăn người/động vật tại gian trưng bày.</span>
+                            </div>
+                        </label>
+
+                        <!-- Điều 7 -->
+                        <label class="flex items-start gap-3 p-3 rounded-xl border border-slate-200 hover:bg-slate-50 cursor-pointer transition">
+                            <input type="checkbox" class="compliance-check mt-1 w-4 h-4 text-indigo-600 rounded">
+                            <div>
+                                <strong class="text-slate-900 block font-semibold">7. Công khai, minh bạch dữ liệu gốc & Nhật ký nghiên cứu:</strong>
+                                <span class="text-slate-500 text-xs">Sẵn sàng xuất trình toàn bộ nhật ký viết tay và dữ liệu gốc khi Ban chỉ đạo, Giám khảo yêu cầu kiểm tra đối chiếu.</span>
+                            </div>
+                        </label>
+
+                        <!-- Điều 8 -->
+                        <label class="flex items-start gap-3 p-3 rounded-xl border border-slate-200 hover:bg-slate-50 cursor-pointer transition">
+                            <input type="checkbox" class="compliance-check mt-1 w-4 h-4 text-indigo-600 rounded">
+                            <div>
+                                <strong class="text-slate-900 block font-semibold">8. Sử dụng công cụ trí tuệ nhân tạo (AI):</strong>
+                                <span class="text-slate-500 text-xs">Việc dùng AI (nếu có) chỉ để tìm tài liệu, lập dàn ý, sửa ngữ pháp hoặc hỗ trợ lập trình. <strong>Tuyệt đối KHÔNG dùng AI để tạo dựng dữ liệu giả hoặc thay thế tư duy nghiên cứu</strong>.</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Right Form Information & Print Export -->
+                <div class="lg:col-span-4 space-y-4">
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                        <h4 class="font-bold text-slate-800 text-xs sm:text-sm uppercase tracking-wide border-b pb-2 flex items-center gap-2">
+                            <i class="fa-solid fa-file-signature text-rose-600"></i>
+                            Tạo Bản In Cam Kết KHKT
+                        </h4>
+
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-600">Tên dự án</label>
+                            <input id="pledgeProjectName" type="text" placeholder="Nhập tên dự án..." class="w-full text-xs p-2 border rounded-lg bg-slate-50">
+                        </div>
+
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-600">Lĩnh vực dự thi</label>
+                            <input id="pledgeField" type="text" placeholder="Ví dụ: Kỹ thuật hóa học, vật liệu..." class="w-full text-xs p-2 border rounded-lg bg-slate-50">
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-600">Học sinh 1</label>
+                                <input id="pledgeStudent1" type="text" placeholder="Nguyễn Văn A" class="w-full text-xs p-2 border rounded-lg bg-slate-50">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-600">Lớp</label>
+                                <input id="pledgeClass1" type="text" placeholder="11A1" class="w-full text-xs p-2 border rounded-lg bg-slate-50">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-600">Học sinh 2 (nếu có)</label>
+                                <input id="pledgeStudent2" type="text" placeholder="Trần Thị B" class="w-full text-xs p-2 border rounded-lg bg-slate-50">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-600">Lớp</label>
+                                <input id="pledgeClass2" type="text" placeholder="11A1" class="w-full text-xs p-2 border rounded-lg bg-slate-50">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-600">Người hướng dẫn</label>
+                            <input id="pledgeMentor" type="text" placeholder="Thầy/Cô hướng dẫn..." class="w-full text-xs p-2 border rounded-lg bg-slate-50">
+                        </div>
+
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-600">Cơ sở giáo dục</label>
+                            <input id="pledgeSchool" type="text" placeholder="Trường THPT Chuyên..." class="w-full text-xs p-2 border rounded-lg bg-slate-50">
+                        </div>
+
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-600 mb-1">Mức độ an toàn</label>
+                            <div class="flex gap-3 text-xs">
+                                <label class="flex items-center gap-1.5"><input type="radio" name="pledgeSafety" value="safe" checked> Mức an toàn</label>
+                                <label class="flex items-center gap-1.5"><input type="radio" name="pledgeSafety" value="approval"> Cần phê duyệt rủi ro</label>
+                            </div>
+                        </div>
+
+                        <button id="printPledgeBtn" class="w-full py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl text-xs transition shadow flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-print"></i> Xem & In Bản Cam Kết Mẫu 2026
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Printable Pledge Document Container (Shows on Print View) -->
+    <div id="printArea" class="hidden print-only max-w-3xl mx-auto p-10 bg-white text-black text-sm">
+        <!-- Will be filled dynamically by print button -->
+    </div>
+
+    <script>
+        // App State
+        const AppState = {
+            apiKey: localStorage.getItem('scithpt_gemini_key') || '',
+            activeTab: 'tab-idea',
+            logbook: JSON.parse(localStorage.getItem('scithpt_logbook') || '[]'),
+            chatHistory: []
+        };
+
+        // DOM Helper Functions
+        const $ = (selector) => document.querySelector(selector);
+        const $$ = (selector) => document.querySelectorAll(selector);
+
+        // Toast Helper
+        function showToast(message, type = 'success') {
+            const toast = $('#toast');
+            const toastMsg = $('#toastMsg');
+            const toastIcon = $('#toastIcon');
+
+            toastMsg.textContent = message;
+            if (type === 'error') {
+                toast.className = 'fixed bottom-5 right-5 z-50 transform transition-all duration-300 flex items-center gap-3 px-4 py-3 rounded-xl shadow-xl text-sm font-medium text-white bg-rose-900 border border-rose-700';
+                toastIcon.className = 'fa-solid fa-circle-xmark text-rose-400';
+            } else if (type === 'info') {
+                toast.className = 'fixed bottom-5 right-5 z-50 transform transition-all duration-300 flex items-center gap-3 px-4 py-3 rounded-xl shadow-xl text-sm font-medium text-white bg-slate-900 border border-slate-700';
+                toastIcon.className = 'fa-solid fa-circle-info text-cyan-400';
+            } else {
+                toast.className = 'fixed bottom-5 right-5 z-50 transform transition-all duration-300 flex items-center gap-3 px-4 py-3 rounded-xl shadow-xl text-sm font-medium text-white bg-slate-900 border border-slate-700';
+                toastIcon.className = 'fa-solid fa-circle-check text-emerald-400';
+            }
+
+            toast.classList.remove('opacity-0', 'translate-y-20', 'pointer-events-none');
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-20', 'pointer-events-none');
+            }, 3500);
         }
 
-        const candidate = data.candidates?.[0];
-        const generatedText = candidate?.content?.parts?.[0]?.text;
-
-        if (!generatedText) {
-          throw new Error('Không nhận được nội dung phản hồi từ mô hình.');
+        function initTabs() {
+            const tabButtons = $$('.tab-btn');
+            tabButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const tabId = btn.getAttribute('data-tab');
+                    switchTab(tabId);
+                });
+            });
         }
 
-        outputContent.innerHTML = marked.parse(generatedText);
-        outputContent.classList.remove('hidden');
+        function switchTab(tabId) {
+            AppState.activeTab = tabId;
+            $$('.tab-content').forEach(section => {
+                section.classList.add('hidden');
+                section.classList.remove('block');
+            });
+            const targetSection = $(`#${tabId}`);
+            if (targetSection) {
+                targetSection.classList.remove('hidden');
+                targetSection.classList.add('block');
+            }
 
-      } catch (err) {
-        console.error(err);
-        alert('Đã xảy ra lỗi khi tạo nội dung: ' + err.message + '\nVui lòng kiểm tra lại API Key hoặc đường truyền mạng.');
-      } finally {
-        loadingState.classList.add('hidden');
-        loadingState.classList.remove('flex');
-        generateBtn.disabled = false;
-        generateBtn.classList.remove('opacity-50');
-      }
-    }
+            $$('.tab-btn').forEach(btn => {
+                if (btn.getAttribute('data-tab') === tabId) {
+                    btn.className = 'tab-btn active flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold transition bg-indigo-600 text-white shadow-sm';
+                } else {
+                    btn.className = 'tab-btn flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-200 transition';
+                }
+            });
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
 
-    function copyResult() {
-      const outputContent = document.getElementById('outputContent');
-      if (!outputContent.innerText.trim()) {
-        alert('Chưa có nội dung để sao chép!');
-        return;
-      }
-      navigator.clipboard.writeText(outputContent.innerText).then(() => {
-        alert('Đã sao chép toàn bộ văn bản vào bộ nhớ tạm (Clipboard)!');
-      });
-    }
-  </script>
+        function initApiKeyModal() {
+            const apiModal = $('#apiModal');
+            const openConfigBtn = $('#openConfigBtn');
+            const closeApiModal = $('#closeApiModal');
+            const saveApiKeyBtn = $('#saveApiKeyBtn');
+            const clearApiKeyBtn = $('#clearApiKeyBtn');
+            const apiKeyInput = $('#geminiApiKeyInput');
+            const apiStatusBadge = $('#apiStatusBadge');
+
+            function updateBadge() {
+                if (AppState.apiKey && AppState.apiKey.trim() !== '') {
+                    apiStatusBadge.className = 'w-2 h-2 rounded-full bg-emerald-500 inline-block';
+                    apiStatusBadge.title = 'Đã kết nối Gemini API';
+                } else {
+                    apiStatusBadge.className = 'w-2 h-2 rounded-full bg-amber-500 inline-block';
+                    apiStatusBadge.title = 'Đang dùng Mock Engine Thông Minh (chưa có API Key)';
+                }
+            }
+
+            apiKeyInput.value = AppState.apiKey;
+            updateBadge();
+
+            openConfigBtn.addEventListener('click', () => {
+                apiKeyInput.value = AppState.apiKey;
+                apiModal.classList.remove('hidden');
+            });
+
+            closeApiModal.addEventListener('click', () => {
+                apiModal.classList.add('hidden');
+            });
+
+            saveApiKeyBtn.addEventListener('click', () => {
+                const val = apiKeyInput.value.trim();
+                AppState.apiKey = val;
+                localStorage.setItem('scithpt_gemini_key', val);
+                updateBadge();
+                apiModal.classList.add('hidden');
+                showToast(val ? 'Đã lưu Gemini API Key!' : 'Đã chuyển về chế độ Mock Engine.');
+            });
+
+            clearApiKeyBtn.addEventListener('click', () => {
+                AppState.apiKey = '';
+                apiKeyInput.value = '';
+                localStorage.removeItem('scithpt_gemini_key');
+                updateBadge();
+                apiModal.classList.add('hidden');
+                showToast('Đã xóa API Key.', 'info');
+            });
+
+            // Rubric modal
+            $('#openRubricBtn').addEventListener('click', () => {
+                $('#rubricModal').classList.remove('hidden');
+            });
+            $('#closeRubricModal').addEventListener('click', () => {
+                $('#rubricModal').classList.add('hidden');
+            });
+        }
+
+        // Call Gemini Model with fallback
+        async function callGemini(systemPrompt, userQuery) {
+            const apiKey = AppState.apiKey || '';
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+            const payload = {
+                contents: [{ parts: [{ text: userQuery }] }],
+                systemInstruction: { parts: [{ text: systemPrompt }] }
+            };
+
+            // If no user API key provided, automatically fallback to mock generator
+            if (!apiKey) {
+                return null;
+            }
+
+            try {
+                let attempts = 0;
+                let delay = 1000;
+                while (attempts < 3) {
+                    try {
+                        const response = await fetch(apiUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+
+                        if (!response.ok) {
+                            throw new Error(`HTTP Error: ${response.status}`);
+                        }
+
+                        const result = await response.json();
+                        const candidate = result.candidates?.[0];
+                        if (candidate?.content?.parts?.[0]?.text) {
+                            return candidate.content.parts[0].text;
+                        }
+                        throw new Error('Dữ liệu trả về rỗng');
+                    } catch (err) {
+                        attempts++;
+                        if (attempts >= 3) throw err;
+                        await new Promise(r => setTimeout(r, delay));
+                        delay *= 2;
+                    }
+                }
+            } catch (error) {
+                console.warn('Lỗi gọi Gemini API, chuyển sang chế độ Mock Engine:', error);
+                return null;
+            }
+        }
+
+        function initIdeaGenerator() {
+            const generateBtn = $('#generateIdeasBtn');
+            const resultList = $('#ideaResultList');
+            const statusIndicator = $('#ideaStatusIndicator');
+
+            generateBtn.addEventListener('click', async () => {
+                const category = $('#ideaCategory').value;
+                const projectType = $('input[name="projectType"]:checked').value;
+                const localIssue = $('#localIssueInput').value.trim() || 'Vấn đề môi trường, tự động hóa nông nghiệp hoặc sức khỏe tâm lý lứa tuổi học đường tại địa phương';
+                const resources = $('#resourceInput').value.trim() || 'Phòng thí nghiệm THPT, cảm biến cơ bản, khảo sát số liệu';
+
+                statusIndicator.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-indigo-600"></i> AI đang phân tích đề tài...';
+                generateBtn.disabled = true;
+                generateBtn.classList.add('opacity-75');
+
+                const systemInstruction = `Bạn là Chuyên gia Hội đồng Khoa học Kỹ thuật Quốc gia Cuộc thi KHKT dành cho học sinh THPT (Bộ GD&ĐT Việt Nam).
+Nhiệm vụ: Gợi ý 3 đề tài chuẩn xác, sáng tạo, khả thi cho học sinh THPT.
+Quy chuẩn đánh giá (Phụ lục 7):
+- Nếu loại hình là "science" (Dự án Khoa học): Phải nêu rõ Câu hỏi nghiên cứu, Giả thuyết khoa học, Biến số độc lập, Biến số phụ thuộc, Biến số kiểm soát (đối chứng).
+- Nếu loại hình là "engineering" (Dự án Kỹ thuật): Phải nêu rõ Nhu cầu thực tế, Tiêu chí giải pháp, Thiết kế nguyên mẫu/mô hình dự kiến, Phương pháp kiểm thử độ tin cậy.
+- Đề tài không vi phạm điều cấm (vũ khí, vi sinh vật độc, động vật có xương sống).
+- Trả về định dạng Markdown rõ ràng, chia tách 3 đề tài rõ ràng.`;
+
+                const prompt = `Lĩnh vực đăng ký: ${category}.
+Loại hình dự án: ${projectType === 'science' ? 'Dự án Khoa học' : 'Dự án Kỹ thuật'}.
+Thực trạng địa phương / Bài toán quan sát được: ${localIssue}.
+Cơ sở vật chất hiện có: ${resources}.
+Hãy đề xuất 3 đề tài chuẩn xác theo cấu trúc KHKT 2026.`;
+
+                let responseText = await callGemini(systemInstruction, prompt);
+
+                if (!responseText) {
+                    // Smart Mock Engine
+                    responseText = getMockIdeas(category, projectType, localIssue, resources);
+                }
+
+                renderIdeas(responseText);
+                statusIndicator.textContent = 'Hoàn thành gợi ý';
+                generateBtn.disabled = false;
+                generateBtn.classList.remove('opacity-75');
+                showToast('Đã tạo 3 đề tài chuẩn KHKT thành công!');
+            });
+        }
+
+        function getMockIdeas(category, type, issue, resources) {
+            if (type === 'science') {
+                return `### Đề tài 1 (Đề xuất cao): Nghiên cứu khảo sát hiệu quả hấp phụ ion kim loại nặng trong nước thải của vật liệu than hoạt tính biến tính từ phụ phẩm nông nghiệp địa phương
+- **Lĩnh vực:** ${category}
+- **Mục tiêu nghiên cứu:** Đánh giá khả năng hấp phụ và tối ưu hóa nồng độ, thời gian tiếp xúc của vật liệu sinh học tái chế.
+- **Câu hỏi nghiên cứu:** Nồng độ tác nhân kiềm hóa ảnh hưởng như thế nào đến dung lượng hấp phụ chì (Pb2+) và sắt (Fe) của vật liệu than sinh học?
+- **Biến số độc lập:** Nồng độ tác nhân biến tính (1M, 2M, 3M), thời gian tiếp xúc (15p, 30p, 60p, 120p).
+- **Biến số phụ thuộc:** Hiệu suất hấp phụ kim loại (%), nồng độ ion còn lại đo bằng quang phổ hấp thụ.
+- **Biến đối chứng:** Mẫu than chưa biến tính và mẫu nước cất đối chứng không bổ sung vật liệu.
+- **Tính khả thi tại trường THPT:** Sử dụng tủ sấy, cân phân tích phòng thí nghiệm Hóa học, liên hệ đo mẫu nồng độ tại trung tâm kiểm định địa phương.
+
+---
+
+### Đề tài 2: Khảo sát mối tương quan giữa thời lượng tiếp xúc ánh sáng xanh từ màn hình thông minh và chất lượng giấc ngủ của học sinh THPT
+- **Lĩnh vực:** ${category}
+- **Câu hỏi nghiên cứu:** Việc sử dụng thiết bị điện tử sau 22h đêm tác động như thế nào đến độ trễ giấc ngủ và chỉ số tỉnh táo ban ngày của học sinh?
+- **Biến số độc lập:** Thời gian sử dụng thiết bị trước khi ngủ (0p, 30p, 60p, >90p) kết hợp bật/tắt chế độ Night Shift.
+- **Biến số phụ thuộc:** Thang đo chất lượng giấc ngủ Pittsburgh (PSQI), điểm bài kiểm tra phản xạ buổi sáng.
+- **Biến kiểm soát:** Chế độ ăn uống, sử dụng caffeine, hoạt động thể lực trong ngày.
+- **Tính khả thi:** Thực hiện qua khảo sát nhật ký ngủ trong 4 tuần trên 120 học sinh tình nguyện.
+
+---
+
+### Đề tài 3: Đánh giá tác động ức chế vi khuẩn đường ruột thông thường của cao chiết từ lá cây dược liệu bản địa
+- **Lĩnh vực:** ${category}
+- **Câu hỏi nghiên cứu:** Nồng độ ức chế tối thiểu (MIC) của dịch chiết ethanol lá cây bản địa đối với chủng vi khuẩn E.coli mô hình là bao nhiêu?
+- **Biến số độc lập:** Dung môi và nồng độ dịch chiết (5%, 10%, 15%, 20%).
+- **Biến số phụ thuộc:** Đường kính vòng kháng khuẩn (mm) trên đĩa thạch.
+- **Biến đối chứng:** Đĩa thạch đối chứng âm (nước cất vô trùng/ethanol) và đối chứng dương (kháng sinh tiêu chuẩn ampicillin).
+- **Lưu ý an toàn:** Chỉ dùng chủng vi sinh vật an toàn cấp 1 được nhà trường cấp phép.`;
+            } else {
+                return `### Đề tài 1 (Đề xuất cao): Thiết kế và chế tạo hệ thống giám sát tự động vi khí hậu nhà lưới và tưới tiết kiệm ứng dụng năng lượng mặt trời
+- **Lĩnh vực:** ${category}
+- **Nhu cầu thực tế:** Giải quyết bài toán lãng phí nước và chi phí điện năng trong canh tác rau sạch nông hộ địa phương (${issue}).
+- **Tiêu chuẩn kỹ thuật cần đạt:** Sai số cảm biến độ ẩm đất < 3%, độ trễ phản hồi rơ-le bơm nước < 2 giây, vận hành liên tục 24/7 với bộ pin sạc quang điện.
+- **Nguyên mẫu/Mô hình:** Bo mạch ESP32 kết nối cảm biến nhiệt - ẩm SHT30, cảm biến điện dung độ ẩm đất, module relay kích van điện từ 12V, màn hình LCD hiển thị và đồng bộ dữ liệu đám mây qua Wi-Fi/Lora.
+- **Phương pháp thử nghiệm:** Thử nghiệm so sánh đối chứng 3 luống rau tưới tự động vs 3 luống rau tưới truyền thống trong 30 ngày (đo lượng nước tiêu thụ và sinh khối cây).
+
+---
+
+### Đề tài 2: Thiết kế thiết bị hỗ trợ cảnh báo sai tư thế ngồi và nhắc nhở giãn cơ tích hợp thị giác máy tính cho học sinh
+- **Lĩnh vực:** ${category}
+- **Nhu cầu thực tế:** Tỷ lệ học sinh THPT mắc tật cong vẹo cột sống và cận thị học đường gia tăng do ngồi sai tư thế thời gian dài.
+- **Tiêu chuẩn kỹ thuật:** Nhận diện góc nghiêng cổ và độ cong lưng với độ chính xác > 85%, thời gian phản hồi cảnh báo âm thanh/rung sau 5 giây ngồi sai liên tục.
+- **Nguyên mẫu/Mô hình:** Thiết bị nhỏ gọn gắn cạnh bàn học sử dụng camera góc rộng, bo mạch vi xử lý nhúng (Raspberry Pi/ESP32-CAM) chạy mô hình nhận diện điểm mốc cơ thể (Pose Landmark).
+- **Phương pháp thử nghiệm:** Thử nghiệm trên 20 học sinh trong 10 buổi học, ghi nhận tần suất điều chỉnh tư thế và phản hồi độ tiện dụng.
+
+---
+
+### Đề tài 3: Chế tạo vật liệu bao bì phân hủy sinh học gia cường sợi cellulose từ phụ phẩm nông nghiệp
+- **Lĩnh vực:** ${category}
+- **Nhu cầu thực tế:** Thay thế túi nylon và hộp xốp dùng một lần khó phân hủy gây ô nhiễm rác thải trắng tại địa phương.
+- **Tiêu chuẩn kỹ thuật:** Độ bền kéo đứt > 15 MPa, khả năng chống thấm nước tối thiểu 3 giờ, thời gian phân hủy sinh học trong đất < 90 ngày.
+- **Nguyên mẫu:** Màng composite sinh học phối trộn giữa tinh bột sắn, gelatin biến tính và sợi cellulose trấu/bã mía.
+- **Kiểm tra & Đo lường:** Thử nghiệm đo độ dãn dài, tỷ lệ hút ẩm và chôn lấp thực tế có đối chứng với màng PE thông thường.`;
+            }
+        }
+
+        function renderIdeas(markdownText) {
+            const container = $('#ideaResultList');
+            // Basic Markdown Parser for headings & lists
+            let html = markdownText
+                .replace(/^### (.*$)/gim, '<div class="mt-4 pt-3 border-t border-slate-200"><h3 class="text-base font-bold text-indigo-900 flex items-center gap-2"><i class="fa-solid fa-flask text-cyan-600"></i> $1</h3></div>')
+                .replace(/^---/gim, '')
+                .replace(/\*\*(.*?)\*\*/g, '<strong class="text-slate-900 font-semibold">$1</strong>')
+                .replace(/^- (.*$)/gim, '<div class="flex items-start gap-2 py-1 text-xs sm:text-sm text-slate-700"><i class="fa-solid fa-chevron-right text-indigo-500 mt-1 text-[10px]"></i><span>$1</span></div>');
+
+            container.innerHTML = `
+                <div class="bg-white p-6 rounded-2xl border border-indigo-100 shadow-sm space-y-3">
+                    <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+                        <span class="text-xs font-bold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-lg">Kết quả phân tích đề tài</span>
+                        <button onclick="applyFirstIdeaToReport()" class="text-xs text-indigo-600 font-semibold hover:underline flex items-center gap-1">
+                            <i class="fa-solid fa-arrow-right"></i> Dùng đề tài 1 cho Khung báo cáo
+                        </button>
+                    </div>
+                    <div class="prose max-w-none text-slate-700">
+                        ${html}
+                    </div>
+                </div>
+            `;
+        }
+
+        window.applyFirstIdeaToReport = function() {
+            const category = $('#ideaCategory').value;
+            $('#reportCategorySelect').value = category;
+            $('#reportTitleInput').value = "Nghiên cứu chế tạo vật liệu sinh học từ phụ phẩm nông nghiệp địa phương ứng dụng xử lý môi trường";
+            $('#reportMethodInput').value = "Phương pháp nhiệt hóa, hoạt hóa bề mặt bằng kiềm, thử nghiệm hấp phụ nồng độ ion và đối chứng với than tiêu chuẩn.";
+            switchTab('tab-design');
+            showToast('Đã chuyển đề tài sang Tab Khung Báo Cáo!');
+        };
+
+        function initReportDesign() {
+            const generateBtn = $('#generateOutlineBtn');
+            const outlineContent = $('#outlineContent');
+            const copyBtn = $('#copyOutlineBtn');
+
+            generateBtn.addEventListener('click', async () => {
+                const title = $('#reportTitleInput').value.trim() || 'Nghiên cứu ứng dụng công nghệ trong giải quyết bài toán thực tiễn THPT';
+                const category = $('#reportCategorySelect').value;
+                const method = $('#reportMethodInput').value.trim() || 'Thực nghiệm đối chứng, đo đạc thống kê và đánh giá sai số';
+
+                generateBtn.disabled = true;
+                generateBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang thiết kế cấu trúc 15 trang...';
+
+                const systemInstruction = `Bạn là Chuyên gia Chấm thi KHKT Quốc gia của Bộ Giáo dục & Đào tạo Việt Nam.
+Hãy lập dàn ý báo cáo KHKT chuẩn xác theo Phụ lục 4 (Báo cáo kết quả dự án KHKT cấp tỉnh/quốc gia 2026).
+QUY TẮC BẮT BUỘC:
+1. Tổng số trang tối đa KHÔNG QUÁ 15 trang A4 (kể cả bìa, mục lục, bảng biểu, tài liệu tham khảo).
+2. Phân bổ chính xác từng trang:
+   - Bìa: 1 trang (Chỉ Tên đề tài, Lĩnh vực, Năm học; CẤM GHI HỌ TÊN HỌC SINH/TRƯỜNG ĐỂ CHẤM MÙ).
+   - Trang 2: Mục lục & Chữ viết tắt.
+   - Trang 3-4: Đặt vấn đề, Tổng quan tài liệu, Khoảng trống nghiên cứu.
+   - Trang 5: Câu hỏi nghiên cứu / Mục tiêu / Giới hạn và giả thuyết.
+   - Trang 6-7: Thiết kế thí nghiệm & Phương pháp triển khai.
+   - Trang 8-12: Kết quả & Thảo luận (xử lý thống kê, đối chứng).
+   - Trang 13: Kết luận & Hướng phát triển.
+   - Trang 14-15: Tài liệu tham khảo & Phụ lục minh chứng.
+3. Kèm theo danh sách 5 lỗi định dạng thường bị trừ điểm nặng hoặc loại hồ sơ.
+Trình bày định dạng HTML gọn gàng, chia các mục nổi bật.`;
+
+                const prompt = `Đề tài: ${title}\nLĩnh vực: ${category}\nPhương pháp: ${method}\nHãy xuất dàn ý chi tiết 15 trang và cảnh báo thể thức.`;
+
+                let result = await callGemini(systemInstruction, prompt);
+
+                if (!result) {
+                    result = `
+                        <div class="space-y-4">
+                            <div class="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-800">
+                                <strong><i class="fa-solid fa-triangle-exclamation mr-1"></i> CẢNH BÁO BẢO MẬT CHẤM MÙ:</strong> Báo cáo tuyệt đối không chứa tên học sinh, người hướng dẫn, trường, huyện/tỉnh hoặc hình ảnh nhận diện khuôn mặt học sinh. Vi phạm sẽ bị truất quyền dự thi ngay lập tức.
+                            </div>
+
+                            <div class="border rounded-xl p-4 bg-white space-y-3">
+                                <h4 class="font-bold text-indigo-900 text-sm uppercase">DÀN Ý BÁO CÁO 15 TRANG CHI TIẾT THEO PHỤ LỤC 4</h4>
+                                <p class="text-xs text-slate-500"><strong>Đề tài:</strong> ${title} | <strong>Lĩnh vực:</strong> ${category}</p>
+
+                                <div class="divide-y text-xs space-y-2">
+                                    <div class="pt-2">
+                                        <div class="flex justify-between font-bold text-slate-800">
+                                            <span>TRANG 1: TRANG BÌA CHUẨN THÔNG TƯ</span>
+                                            <span class="text-indigo-600 font-mono">Trang 1</span>
+                                        </div>
+                                        <p class="text-slate-600 mt-1">Ghi rõ: CUỘC THI KHOA HỌC KỸ THUẬT DÀNH CHO HỌC SINH TRUNG HỌC NĂM HỌC 2026-2027. BÁO CÁO KẾT QUẢ THỰC HIỆN DỰ ÁN KHOA HỌC, KỸ THUẬT. Tên dự án: ${title}. Lĩnh vực: ${category}. (KHÔNG ghi trường, huyện, tên học sinh).</p>
+                                    </div>
+
+                                    <div class="pt-2">
+                                        <div class="flex justify-between font-bold text-slate-800">
+                                            <span>TRANG 2: MỤC LỤC & DANH MỤC THUẬT NGỮ VIẾT TẮT</span>
+                                            <span class="text-indigo-600 font-mono">Trang 2</span>
+                                        </div>
+                                        <p class="text-slate-600 mt-1">Danh mục bảng số liệu, biểu đồ hình ảnh và các ký hiệu khoa học quốc tế.</p>
+                                    </div>
+
+                                    <div class="pt-2">
+                                        <div class="flex justify-between font-bold text-slate-800">
+                                            <span>TRANG 3-4: CHƯƠNG 1 - TỔNG QUAN VẤN ĐỀ NGHIÊN CỨU</span>
+                                            <span class="text-indigo-600 font-mono">Trang 3-4</span>
+                                        </div>
+                                        <p class="text-slate-600 mt-1">• 1.1 Tính cấp thiết và thực trạng bức thiết tại địa phương.<br>• 1.2 Tổng quan các công trình nghiên cứu trong và ngoài nước (chỉ ra khoảng trống khoa học mà dự án này sẽ giải quyết).</p>
+                                    </div>
+
+                                    <div class="pt-2">
+                                        <div class="flex justify-between font-bold text-slate-800">
+                                            <span>TRANG 5: CÂU HỎI NGHIÊN CỨU, MỤC TIÊU & GIỚI HẠN DỰ ÁN</span>
+                                            <span class="text-indigo-600 font-mono">Trang 5</span>
+                                        </div>
+                                        <p class="text-slate-600 mt-1">• Xác định rõ câu hỏi nghiên cứu/yêu cầu kỹ thuật cốt lõi.<br>• Biến số độc lập, biến số phụ thuộc, biến số kiểm soát.<br>• Giới hạn phạm vi nghiên cứu (thừa nhận các ràng buộc kỹ thuật).</p>
+                                    </div>
+
+                                    <div class="pt-2">
+                                        <div class="flex justify-between font-bold text-slate-800">
+                                            <span>TRANG 6-7: CHƯƠNG 2 - THIẾT KẾ VÀ PHƯƠNG PHÁP NGHIÊN CỨU</span>
+                                            <span class="text-indigo-600 font-mono">Trang 6-7</span>
+                                        </div>
+                                        <p class="text-slate-600 mt-1">• Quy trình thực nghiệm/sơ đồ khối hệ thống.<br>• Hóa chất, thiết bị sử dụng (nêu rõ độ chính xác và xuất xứ dụng cụ đo).<br>• Phương pháp xử lý dữ liệu thống kê (phần mềm, tính độ lệch chuẩn SD, p-value).</p>
+                                    </div>
+
+                                    <div class="pt-2">
+                                        <div class="flex justify-between font-bold text-slate-800">
+                                            <span>TRANG 8-12: CHƯƠNG 3 - KẾT QUẢ THỰC NGHIỆM VÀ BÀN LUẬN</span>
+                                            <span class="text-indigo-600 font-mono">Trang 8-12 (Trọng tâm)</span>
+                                        </div>
+                                        <p class="text-slate-600 mt-1">• Bảng số liệu lặp lại tối thiểu 3 lần thí nghiệm.<br>• Đồ thị biểu diễn tương quan giữa các biến số.<br>• Bàn luận đối chiếu với giả thuyết ban đầu, phân tích nguyên nhân sai lệch và độ tin cậy.</p>
+                                    </div>
+
+                                    <div class="pt-2">
+                                        <div class="flex justify-between font-bold text-slate-800">
+                                            <span>TRANG 13: CHƯƠNG 4 - KẾT LUẬN VÀ KIẾN NGHỊ</span>
+                                            <span class="text-indigo-600 font-mono">Trang 13</span>
+                                        </div>
+                                        <p class="text-slate-600 mt-1">• Tóm tắt các kết quả đạt được.<br>• Khẳng định tính mới và đóng góp thực tiễn.<br>• Đề xuất hướng hoàn thiện và nghiên cứu tiếp theo.</p>
+                                    </div>
+
+                                    <div class="pt-2">
+                                        <div class="flex justify-between font-bold text-slate-800">
+                                            <span>TRANG 14-15: TÀI LIỆU THAM KHẢO & PHỤ LỤC TÓM TẮT</span>
+                                            <span class="text-indigo-600 font-mono">Trang 14-15</span>
+                                        </div>
+                                        <p class="text-slate-600 mt-1">• Danh mục tài liệu tham khảo theo chuẩn IEEE hoặc APA.<br>• Tóm tắt số liệu thô và nhật ký nghiên cứu chứng minh tính liên tục.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                outlineContent.innerHTML = result;
+                generateBtn.disabled = false;
+                generateBtn.innerHTML = '<i class="fa-solid fa-diagram-project"></i> Tạo lại Dàn Ý 15 Trang';
+                showToast('Đã tạo khung báo cáo 15 trang chuẩn quy định!');
+            });
+
+            copyBtn.addEventListener('click', () => {
+                const text = outlineContent.innerText;
+                const tempTextArea = document.createElement('textarea');
+                tempTextArea.value = text;
+                document.body.appendChild(tempTextArea);
+                tempTextArea.select();
+                try {
+                    document.execCommand('copy');
+                    showToast('Đã sao chép khung dàn ý vào bộ nhớ tạm!');
+                } catch (e) {
+                    showToast('Không thể sao chép tự động', 'error');
+                }
+                document.body.removeChild(tempTextArea);
+            });
+        }
+
+        function initLogbook() {
+            const addBtn = $('#addLogEntryBtn');
+            const aiEnhanceBtn = $('#aiEnhanceLogBtn');
+            const clearBtn = $('#clearLogsBtn');
+            const exportBtn = $('#exportLogbookBtn');
+            const list = $('#logbookList');
+
+            // Set default date to today
+            $('#logDate').value = new Date().toISOString().split('T')[0];
+
+            function renderLogs() {
+                if (AppState.logbook.length === 0) {
+                    list.innerHTML = `
+                        <div class="bg-white p-6 rounded-2xl border border-dashed border-slate-300 text-center text-slate-400 text-xs">
+                            <i class="fa-solid fa-book text-2xl mb-2 text-slate-300"></i>
+                            <p>Chưa có mục nhật ký nào. Hãy ghi lại các thao tác hàng ngày để đảm bảo minh chứng Điều 14.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                list.innerHTML = AppState.logbook.map((log, index) => `
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-2 relative group transition hover:border-teal-300">
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="font-bold text-teal-800 bg-teal-50 px-2 py-0.5 rounded border border-teal-200">
+                                <i class="fa-regular fa-calendar mr-1"></i> ${log.date}
+                            </span>
+                            <div class="flex items-center gap-2">
+                                <span class="text-[11px] font-semibold text-slate-500">${log.phase}</span>
+                                <button onclick="deleteLogEntry(${index})" class="text-slate-400 hover:text-rose-600 transition p-1" title="Xóa">
+                                    <i class="fa-solid fa-trash-can text-xs"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="text-xs text-slate-800">
+                            <strong>Công việc:</strong> ${log.action}
+                        </div>
+                        ${log.dataRaw ? `
+                        <div class="text-xs bg-slate-50 p-2.5 rounded-lg border border-slate-200 code-font text-slate-700">
+                            <span class="text-slate-400 block text-[10px] uppercase font-bold">Dữ liệu thô / Hiện tượng ghi nhận:</span>
+                            ${log.dataRaw}
+                        </div>` : ''}
+                        <div class="text-[11px] text-slate-400 flex items-center justify-between pt-1 border-t border-slate-100">
+                            <span><i class="fa-solid fa-user-check text-teal-500 mr-1"></i> Thực hiện: <strong>${log.member || 'Học sinh'}</strong></span>
+                            <span class="italic text-[10px] text-emerald-600">Đã lưu trữ dữ liệu gốc Điều 14</span>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            // Initial render
+            if (AppState.logbook.length === 0) {
+                // Populate sample logs to guide students
+                AppState.logbook = [
+                    {
+                        date: "2026-03-10",
+                        phase: "1. Khởi tạo ý tưởng & Đọc tài liệu tham khảo",
+                        action: "Tìm kiếm 12 bài báo khoa học trên Google Scholar về xử lý phụ phẩm nông nghiệp. Lập bảng so sánh các phương pháp cơ học và hóa học.",
+                        dataRaw: "Ghi nhận 3 bài báo có quy trình chiết xuất ở nhiệt độ phòng phù hợp với thiết bị phòng thí nghiệm trường THPT.",
+                        member: "Học sinh 1 & Học sinh 2"
+                    },
+                    {
+                        date: "2026-03-18",
+                        phase: "3. Thực nghiệm thí nghiệm / Lập trình / Chế tạo",
+                        action: "Tiến hành khảo sát lô thí nghiệm Mẫu A (3 mẫu lặp lại A1, A2, A3). Đo nhiệt độ phản ứng bằng nhiệt kế thủy ngân.",
+                        dataRaw: "Nhiệt độ đỉnh đạt 42.5°C sau 12 phút. Mẫu A2 bị sủi bọt nhiều do khuấy quá nhanh (200 vòng/phút). Điều chỉnh về 120 vòng/phút cho các lần sau.",
+                        member: "Học sinh 1"
+                    }
+                ];
+                localStorage.setItem('scithpt_logbook', JSON.stringify(AppState.logbook));
+            }
+            renderLogs();
+
+            addBtn.addEventListener('click', () => {
+                const date = $('#logDate').value;
+                const phase = $('#logPhase').value;
+                const action = $('#logAction').value.trim();
+                const dataRaw = $('#logDataRaw').value.trim();
+                const member = $('#logMember').value.trim() || 'Học sinh nghiên cứu';
+
+                if (!action) {
+                    showToast('Vui lòng ghi nội dung công việc thực hiện!', 'error');
+                    return;
+                }
+
+                AppState.logbook.unshift({ date, phase, action, dataRaw, member });
+                localStorage.setItem('scithpt_logbook', JSON.stringify(AppState.logbook));
+                renderLogs();
+
+                $('#logAction').value = '';
+                $('#logDataRaw').value = '';
+                showToast('Đã lưu một bản ghi nhật ký mới!');
+            });
+
+            window.deleteLogEntry = function(index) {
+                AppState.logbook.splice(index, 1);
+                localStorage.setItem('scithpt_logbook', JSON.stringify(AppState.logbook));
+                renderLogs();
+                showToast('Đã xóa bản ghi nhật ký.', 'info');
+            };
+
+            clearBtn.addEventListener('click', () => {
+                AppState.logbook = [];
+                localStorage.setItem('scithpt_logbook', '[]');
+                renderLogs();
+                showToast('Đã dọn sạch nhật ký.', 'info');
+            });
+
+            // AI Log Enhancer
+            aiEnhanceBtn.addEventListener('click', async () => {
+                const action = $('#logAction').value.trim();
+                const dataRaw = $('#logDataRaw').value.trim();
+                if (!action) {
+                    showToast('Hãy nhập sơ lược việc bạn đã làm vào ô để AI gợi ý chuẩn hóa khoa học!', 'error');
+                    return;
+                }
+
+                aiEnhanceBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+                const prompt = `Học sinh THPT vừa thực hiện bước: "${action}". Số liệu thô ghi chép: "${dataRaw}".
+Hãy chuẩn hóa đoạn mô tả trên theo phong cách nhật ký phòng thí nghiệm khoa học trung thực, chỉ rõ các thông số cần lưu ý (nhiệt độ, thiết bị đo, số lần lặp, sai số). Không làm sai lệch sự thật mà giúp học sinh ghi chép khách quan, đầy đủ minh chứng.`;
+
+                let res = await callGemini("Bạn là trợ lý chuẩn hóa nhật ký nghiên cứu khoa học học sinh THPT.", prompt);
+                aiEnhanceBtn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> AI Chuẩn Hóa';
+
+                if (res) {
+                    $('#logAction').value = res.trim();
+                    showToast('AI đã hoàn thiện chi tiết nhật ký!');
+                } else {
+                    $('#logAction').value = `${action} (Tiến hành lặp lại 3 lần độc lập, kiểm soát nhiệt độ môi trường 28°C ± 1°C, dùng cân phân tích 0.001g, ghi chép nhật ký trực tiếp ngay sau khi đọc kết quả).`;
+                    showToast('Đã bổ sung chuẩn hóa thao tác khoa học!');
+                }
+            });
+
+            // Export Logbook
+            exportBtn.addEventListener('click', () => {
+                if (AppState.logbook.length === 0) {
+                    showToast('Nhật ký chưa có dữ liệu để xuất!', 'error');
+                    return;
+                }
+                let printContent = `
+                    <div style="font-family: 'Times New Roman', serif; padding: 20px; line-height: 1.5;">
+                        <h2 style="text-align: center; text-transform: uppercase; font-size: 16pt; margin-bottom: 5px;">NHẬT KÝ NGHIÊN CỨU KHOA HỌC DỰ ÁN</h2>
+                        <p style="text-align: center; font-style: italic; font-size: 11pt; margin-bottom: 20px;">(Minh chứng căn cứ Điều 14 - Quy chế Cuộc thi KHKT học sinh trung học 2026)</p>
+                        <table style="width: 100%; border-collapse: collapse; font-size: 11pt;" border="1">
+                            <thead>
+                                <tr style="background-color: #f2f2f2;">
+                                    <th style="padding: 8px; width: 12%;">Ngày</th>
+                                    <th style="padding: 8px; width: 20%;">Giai đoạn</th>
+                                    <th style="padding: 8px; width: 38%;">Thao tác & Công việc</th>
+                                    <th style="padding: 8px; width: 20%;">Dữ liệu thô / Sai số</th>
+                                    <th style="padding: 8px; width: 10%;">Ký nhận</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${AppState.logbook.map(log => `
+                                    <tr>
+                                        <td style="padding: 8px; text-align: center;">${log.date}</td>
+                                        <td style="padding: 8px;">${log.phase}</td>
+                                        <td style="padding: 8px;">${log.action}</td>
+                                        <td style="padding: 8px; font-family: monospace;">${log.dataRaw || 'Không'}</td>
+                                        <td style="padding: 8px; text-align: center;">${log.member}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                const win = window.open('', '', 'width=900,height=700');
+                win.document.write(`<html><head><title>Nhat_Ky_Nghien_Cuu_KHKT</title></head><body>${printContent}</body></html>`);
+                win.document.close();
+                win.focus();
+                setTimeout(() => { win.print(); }, 500);
+            });
+        }
+
+        function initInterviewSimulator() {
+            const chatBox = $('#chatMessages');
+            const chatInput = $('#chatInput');
+            const sendBtn = $('#sendChatBtn');
+            const startBtn = $('#startInterviewBtn');
+            const resetBtn = $('#resetChatBtn');
+
+            function appendMessage(sender, text, isJudge = false) {
+                const div = document.createElement('div');
+                div.className = 'flex gap-3 ' + (isJudge ? '' : 'justify-end');
+
+                if (isJudge) {
+                    div.innerHTML = `
+                        <div class="w-8 h-8 rounded-full bg-purple-600 text-white flex-shrink-0 flex items-center justify-center text-xs font-bold shadow">
+                            GK
+                        </div>
+                        <div class="bg-purple-50 text-slate-800 p-3.5 rounded-2xl rounded-tl-none max-w-[85%] border border-purple-100 space-y-1">
+                            <p class="font-semibold text-purple-900 text-xs">Giám Khảo Cuộc Thi KHKT:</p>
+                            <p class="leading-relaxed text-xs sm:text-sm">${text}</p>
+                        </div>
+                    `;
+                } else {
+                    div.innerHTML = `
+                        <div class="bg-indigo-600 text-white p-3.5 rounded-2xl rounded-tr-none max-w-[85%] shadow space-y-1">
+                            <p class="text-[10px] text-indigo-200 font-semibold text-right">Thí sinh trả lời:</p>
+                            <p class="leading-relaxed text-xs sm:text-sm">${text}</p>
+                        </div>
+                        <div class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 flex-shrink-0 flex items-center justify-center text-xs font-bold">
+                            HS
+                        </div>
+                    `;
+                }
+
+                chatBox.appendChild(div);
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }
+
+            async function handleSendMessage() {
+                const message = chatInput.value.trim();
+                if (!message) return;
+
+                appendMessage('Học sinh', message, false);
+                chatInput.value = '';
+
+                // Show typing indicator
+                const typingId = 'typing-' + Date.now();
+                const typingDiv = document.createElement('div');
+                typingDiv.id = typingId;
+                typingDiv.className = 'flex gap-3 items-center text-slate-400 text-xs italic pl-2';
+                typingDiv.innerHTML = '<i class="fa-solid fa-ellipsis fa-fade"></i> Giám khảo đang lắng nghe và suy ngẫm câu hỏi phản biện...';
+                chatBox.appendChild(typingDiv);
+                chatBox.scrollTop = chatBox.scrollHeight;
+
+                const persona = $('#judgePersona').value;
+                const topic = $('#interviewTopic').value.trim() || 'Dự án nghiên cứu KHKT THPT';
+
+                const systemInstruction = `Bạn là Giám khảo Cuộc thi Khoa học Kỹ thuật Học sinh Trung học cấp Quốc gia (Thông tư Bộ GD&ĐT 2026).
+Bạn đang chấm Tiêu chí V: Trình bày và Phỏng vấn áp phích/poster (35 điểm).
+Phong cách: ${persona}.
+Đề tài thí sinh báo cáo: ${topic}.
+Nguyên tắc ứng xử của Giám khảo:
+1. Đặt câu hỏi dứt khoát, đi thẳng vào bản chất: Biến số độc lập/đối chứng, số lần lặp thí nghiệm, việc học sinh tự làm hay người lớn làm hộ, chi phí và giới hạn của đề tài.
+2. Đánh giá câu trả lời vừa rồi của học sinh (ngắn gọn 1 câu khen hoặc chỉ ra lỗ hổng lập luận) rồi lập tức hỏi 1 câu tiếp theo hóc búa hơn.
+3. Không trả lời chung chung, đặt câu hỏi đúng chuyên môn khoa học THPT.`;
+
+                const historyPrompt = `Thí sinh vừa nói: "${message}". Hãy nhận xét ngắn và đặt câu hỏi chất vấn tiếp theo.`;
+
+                let judgeReply = await callGemini(systemInstruction, historyPrompt);
+
+                const typingEl = document.getElementById(typingId);
+                if (typingEl) typingEl.remove();
+
+                if (!judgeReply) {
+                    judgeReply = getMockJudgeResponse(message);
+                }
+
+                appendMessage('Giám khảo', judgeReply, true);
+            }
+
+            function getMockJudgeResponse(userAns) {
+                const responses = [
+                    "Câu trả lời của em có ý đúng, tuy nhiên tôi thấy trong biểu đồ kết quả, sai số giữa các lần lặp lên tới 15%. Em hãy giải thích rõ: Dữ liệu này em ghi trong nhật ký nghiên cứu vào ngày nào và nguyên nhân sai số ngẫu nhiên do đâu?",
+                    "Em vừa nhắc đến việc giải pháp có tính tối ưu. Vậy tôi muốn hỏi: Biến số đối chứng (Control Group) của em được thiết lập như thế nào để chứng minh chính giải pháp của em tạo nên sự khác biệt chứ không phải do điều kiện ngoại cảnh?",
+                    "Ý tưởng này khá phức tạp so với chương trình THPT. Em hãy trình bày chi tiết công thức toán học/thuật toán mà chính tay em đã viết hoặc tính toán trong đề tài này, hay phần này em sử dụng thư viện có sẵn của người khác?",
+                    "Sản phẩm của em rất thú vị, nhưng hãy cho Hội đồng biết: Đâu là GIỚI HẠN lớn nhất của đề tài mà hiện tại nhóm em chưa giải quyết được? Nếu được tiếp tục nghiên cứu trong 6 tháng tới, em sẽ cải tiến điều gì?"
+                ];
+                return responses[Math.floor(Math.random() * responses.length)];
+            }
+
+            sendBtn.addEventListener('click', handleSendMessage);
+            chatInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') handleSendMessage();
+            });
+
+            startBtn.addEventListener('click', () => {
+                const topic = $('#interviewTopic').value.trim();
+                chatBox.innerHTML = '';
+                appendMessage('Giám khảo', `Chào các em. Hội đồng đã đọc qua poster tóm tắt về đề tài "${topic || 'dự án của em'}". Trước tiên, hãy chỉ rõ trên Poster của em: Đâu là <strong>DỮ LIỆU GỐC</strong> được rút ra trực tiếp từ Nhật ký nghiên cứu của chính em?`, true);
+                showToast('Đã bắt đầu phiên phỏng vấn mới!');
+            });
+
+            resetBtn.addEventListener('click', () => {
+                chatBox.innerHTML = '';
+                appendMessage('Giám khảo', 'Chào em. Hãy giới thiệu ngắn gọn vấn đề nghiên cứu và câu hỏi khoa học cốt lõi của đề tài trong 60 giây.', true);
+            });
+        }
+
+        function initCompliance() {
+            const checkboxes = $$('.compliance-check');
+            const scoreBadge = $('#complianceScore');
+            const printBtn = $('#printPledgeBtn');
+
+            function updateScore() {
+                let count = 0;
+                checkboxes.forEach(cb => {
+                    if (cb.checked) count++;
+                });
+                scoreBadge.textContent = `Đạt ${count}/8 điều`;
+                if (count === 8) {
+                    scoreBadge.className = 'text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800';
+                } else {
+                    scoreBadge.className = 'text-xs font-bold px-2.5 py-1 rounded-full bg-amber-100 text-amber-800';
+                }
+            }
+
+            checkboxes.forEach(cb => {
+                cb.addEventListener('change', updateScore);
+            });
+
+            printBtn.addEventListener('click', () => {
+                const projectName = $('#pledgeProjectName').value.trim() || '...................................................';
+                const field = $('#pledgeField').value.trim() || '...................................................';
+                const student1 = $('#pledgeStudent1').value.trim() || '..........................................';
+                const class1 = $('#pledgeClass1').value.trim() || '..........';
+                const student2 = $('#pledgeStudent2').value.trim() || '..........................................';
+                const class2 = $('#pledgeClass2').value.trim() || '..........';
+                const mentor = $('#pledgeMentor').value.trim() || '...................................................';
+                const school = $('#pledgeSchool').value.trim() || '...................................................';
+                const safety = $('input[name="pledgeSafety"]:checked').value;
+
+                const printArea = $('#printArea');
+                printArea.innerHTML = `
+                    <div style="font-family: 'Times New Roman', serif; line-height: 1.4; color: black;">
+                        <div style="text-align: center; margin-bottom: 15px;">
+                            <strong>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</strong><br>
+                            <strong>Độc lập - Tự do - Hạnh phúc</strong><br>
+                            -----------------------
+                        </div>
+
+                        <div style="text-align: center; margin-bottom: 20px;">
+                            <h3 style="margin: 0; font-size: 14pt; font-weight: bold;">CAM KẾT</h3>
+                            <h4 style="margin: 5px 0; font-size: 13pt; font-weight: bold;">TUÂN THỦ YÊU CẦU ĐỐI VỚI DỰ ÁN DỰ THI CUỘC THI KHOA HỌC KỸ THUẬT</h4>
+                        </div>
+
+                        <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 11pt;" border="1">
+                            <tr>
+                                <td style="padding: 6px; width: 25%;"><strong>Tên dự án:</strong></td>
+                                <td colspan="3" style="padding: 6px;">${projectName}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 6px;"><strong>Lĩnh vực dự thi:</strong></td>
+                                <td colspan="3" style="padding: 6px;">${field}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 6px;"><strong>Cơ sở giáo dục:</strong></td>
+                                <td colspan="3" style="padding: 6px;">${school}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 6px;"><strong>Học sinh 1:</strong></td>
+                                <td style="padding: 6px; width: 40%;">${student1}</td>
+                                <td style="padding: 6px; width: 10%;"><strong>Lớp:</strong></td>
+                                <td style="padding: 6px;">${class1}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 6px;"><strong>Học sinh 2 (nếu có):</strong></td>
+                                <td style="padding: 6px;">${student2}</td>
+                                <td style="padding: 6px;"><strong>Lớp:</strong></td>
+                                <td style="padding: 6px;">${class2}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 6px;"><strong>Người hướng dẫn:</strong></td>
+                                <td colspan="3" style="padding: 6px;">${mentor}</td>
+                            </tr>
+                        </table>
+
+                        <p style="font-size: 11pt; margin-bottom: 8px;"><strong>Phân loại mức độ an toàn của dự án:</strong></p>
+                        <div style="display: flex; gap: 30px; margin-bottom: 15px; font-size: 11pt;">
+                            <span>${safety === 'approval' ? '<strong>[ X ] Mức phê duyệt rủi ro</strong>' : '[  ] Mức phê duyệt rủi ro'}</span>
+                            <span>${safety === 'safe' ? '<strong>[ X ] Mức an toàn để thực hiện</strong>' : '[  ] Mức an toàn để thực hiện'}</span>
+                        </div>
+
+                        <p style="font-size: 10.5pt; text-align: justify; margin-bottom: 8px;">
+                            Chúng tôi cam kết dự án nêu trên tuân thủ đầy đủ 8 nội dung quy định của Ban tổ chức Cuộc thi KHKT năm học 2026-2027:
+                            <br>1. Trung thực, khách quan và liêm chính khoa học; không giả mạo số liệu hoặc chiếm đoạt kết quả nghiên cứu.
+                            <br>2. Thời gian nghiên cứu không quá 12 tháng liên tục.
+                            <br>3. Mức độ tham gia và đóng góp thực chất của từng thành viên có khả năng kiểm chứng qua nhật ký nghiên cứu.
+                            <br>4. Không thuộc mức cấm tuyệt đối, không gây nguy hiểm an toàn sinh học, độc chất hay động vật trái đạo đức.
+                            <br>5. Đã được cơ sở giáo dục phê duyệt sơ bộ kế hoạch nghiên cứu.
+                            <br>6. Tuân thủ nghiêm ngặt quy định về trưng bày poster và gian triển lãm.
+                            <br>7. Công khai, minh bạch dữ liệu gốc và sẵn sàng xuất trình nhật ký nghiên cứu để thẩm tra.
+                            <br>8. <strong>Sử dụng trí tuệ nhân tạo (AI):</strong> Việc sử dụng công cụ AI (nếu có) tuân thủ quy chế, không sử dụng AI để thay thế hoạt động tự nghiên cứu, phân tích hoặc sáng tạo của học sinh. Học sinh hoàn toàn chịu trách nhiệm về nội dung và kết quả dự thi.
+                        </p>
+
+                        <div style="margin-top: 30px; display: flex; justify-content: space-between; text-align: center; font-size: 11pt;">
+                            <div style="width: 45%;">
+                                <strong>HỌC SINH 1</strong><br>
+                                <em>(Ký và ghi rõ họ tên)</em><br><br><br><br>
+                                ${student1}
+                            </div>
+                            <div style="width: 45%;">
+                                <strong>HỌC SINH 2 (nếu có)</strong><br>
+                                <em>(Ký và ghi rõ họ tên)</em><br><br><br><br>
+                                ${student2}
+                            </div>
+                        </div>
+
+                        <div style="margin-top: 40px; text-align: center; font-size: 11pt;">
+                            <strong>XÁC NHẬN CỦA CƠ SỞ GIÁO DỤC</strong><br>
+                            <em>(Ký tên và đóng dấu)</em><br><br><br><br>
+                        </div>
+                    </div>
+                `;
+
+                window.print();
+            });
+        }
+
+        window.onload = function() {
+            initTabs();
+            initApiKeyModal();
+            initIdeaGenerator();
+            initReportDesign();
+            initLogbook();
+            initInterviewSimulator();
+            initCompliance();
+        };
+    </script>
 </body>
 </html>
